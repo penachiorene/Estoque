@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Películas - Rene Penachio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .priority-low { background-color: #fee2e2; color: #991b1b; } /* Vermelho suave */
+        .priority-high { background-color: #dcfce7; color: #166534; } /* Verde suave */
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 95%;
+            max-width: 1100px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        /* AI Input Animation */
+        .ai-glow:focus {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            border-color: #6366f1;
+        }
+        .trend-up { color: #dc2626; } 
+        .trend-down { color: #16a34a; } 
+        .trend-neutral { color: #9ca3af; }
+
+        /* Table Filter Inputs */
+        .filter-input {
+            width: 100%;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            margin-top: 0.25rem;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            ring: 1px solid #6366f1;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Gestão de Estoque</h1>
+                <p class="text-sm text-gray-500">Rene Penachio | Atualizado: Jan 2026</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                 <button onclick="openExportModal()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Exportar Relatório (.xls)
+                </button>
+                <button onclick="initShoppingSession()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    Relatório de Compras (18h)
+                </button>
+                <button onclick="calculateMedianReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Mediana & Previsão
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- AI Command Section -->
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 mb-8 border border-indigo-100 shadow-sm">
+            <label class="block text-sm font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Assistente Inteligente (Gemini Mode)
+            </label>
+            <div class="flex gap-2">
+                <input type="text" id="aiInput" 
+                    placeholder="Ex: 'Vendi 2 iPhone 14' ou 'Chegou 5 Redmi Note 7'" 
+                    class="ai-glow w-full px-4 py-3 rounded-lg border-gray-300 focus:outline-none transition border text-gray-700"
+                    onkeypress="if(event.key === 'Enter') processAICommand()">
+                <button onclick="processAICommand()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition">
+                    Enviar
+                </button>
+            </div>
+            <p class="text-xs text-indigo-400 mt-2 ml-1">Digite entradas ou saídas em linguagem natural.</p>
+            <div id="aiFeedback" class="hidden mt-3 p-3 rounded-lg text-sm"></div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="mainTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tipo
+                                <input type="text" onkeyup="filterTable()" id="filterType" class="filter-input" placeholder="Filtrar...">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Modelo / Marca
+                                <input type="text" onkeyup="filterTable()" id="filterModel" class="filter-input" placeholder="Filtrar...">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Material
+                                <input type="text" onkeyup="filterTable()" id="filterMaterial" class="filter-input" placeholder="Filtrar...">
+                            </th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Ano
+                                <input type="number" onkeyup="filterTable()" id="filterYear" class="filter-input text-center" placeholder="Ano">
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Custo Unit.
+                                <input type="text" disabled class="filter-input bg-gray-100 cursor-not-allowed border-transparent">
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Venda Unit.
+                                <input type="text" disabled class="filter-input bg-gray-100 cursor-not-allowed border-transparent">
+                            </th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Estoque
+                                <input type="number" onkeyup="filterTable()" id="filterQty" class="filter-input text-center" placeholder="< Qtd">
+                            </th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Saída
+                                <input type="number" onkeyup="filterTable()" id="filterSales" class="filter-input text-center" placeholder="> Qtd">
+                            </th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                                <select onchange="filterTable()" id="filterStatus" class="filter-input text-center">
+                                    <option value="">Todos</option>
+                                    <option value="PRIORITÁRIO">Prioritário</option>
+                                    <option value="NÃO PRIORITÁRIO">Não Prioritário</option>
+                                </select>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="mt-4 text-xs text-gray-500 text-right">* Clique nos valores de preço ou saída para editar.</p>
+    </main>
+
+    <!-- Modal: Exportar Relatório -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h2 class="text-xl font-bold text-gray-900">Exportar Relatório Personalizado</h2>
+                <span onclick="closeModal('exportModal')" class="cursor-pointer text-gray-400 hover:text-gray-600 text-2xl">&times;</span>
+            </div>
+            
+            <p class="text-sm text-gray-500 mb-4">Selecione as colunas que deseja incluir no arquivo Excel (.xls). Os dados serão exportados conforme os filtros aplicados na tela.</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="type"> <span class="text-sm">Tipo</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="model"> <span class="text-sm">Modelo</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="brand"> <span class="text-sm">Marca</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="material"> <span class="text-sm">Material</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="year"> <span class="text-sm">Ano</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="cost"> <span class="text-sm">Custo Unit.</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="sale"> <span class="text-sm">Venda Unit.</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="qty"> <span class="text-sm">Estoque</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="sales"> <span class="text-sm">Saída</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" checked class="export-col rounded text-indigo-600" value="status"> <span class="text-sm">Status</span></label>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('exportModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium">Cancelar</button>
+                <button onclick="generateXLS()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Baixar Arquivo .XLS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Relatório de Compras (Mantido) -->
+    <div id="shoppingModal" class="modal">
+        <!-- Content same as previous version -->
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Relatório de Reposição</h2>
+                    <p class="text-sm text-gray-500">Defina as quantidades para reposição e remova itens indesejados.</p>
+                </div>
+                <span onclick="closeModal('shoppingModal')" class="cursor-pointer text-gray-400 hover:text-gray-600 text-3xl">&times;</span>
+            </div>
+            
+            <h3 class="text-lg font-semibold text-green-800 mb-2 flex items-center gap-2">
+                Itens Selecionados para Compra
+            </h3>
+            <div class="overflow-y-auto max-h-80 mb-6 border rounded-lg bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-1/3">Item</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Estoque</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Qtd. Compra</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shoppingListCart" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+                <div id="emptyCartMsg" class="p-8 text-center text-sm text-gray-500 hidden flex flex-col items-center">
+                    Lista de compras vazia.
+                </div>
+            </div>
+
+            <div id="unifiedActionArea" class="mb-8 hidden">
+                <a id="unifiedCalendarLink" href="#" target="_blank" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg flex justify-center items-center gap-2 transition shadow-md">
+                    AGENDAR LISTA COMPLETA NO GOOGLE AGENDA
+                </a>
+                <p class="text-xs text-center text-gray-500 mt-2">Gera uma única tarefa com os itens e quantidades acima.</p>
+            </div>
+
+            <h3 class="text-lg font-semibold text-amber-800 mb-2 flex items-center gap-2 border-t pt-4">
+                Itens Antigos / Não Prioritários
+            </h3>
+            <div class="overflow-y-auto max-h-40 border rounded-lg bg-amber-50">
+                <table class="min-w-full divide-y divide-amber-200">
+                    <thead class="bg-amber-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-amber-800 uppercase">Item</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-amber-800 uppercase">Estoque</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-amber-800 uppercase">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shoppingListManual" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+                 <div id="emptyManualMsg" class="p-4 text-center text-sm text-gray-500 hidden">Nenhum item antigo em falta.</div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeModal('shoppingModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg font-medium">Fechar Janela</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Relatório de Mediana e Preços (ATUALIZADO) -->
+    <div id="medianModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Análise de Saída e Previsão Financeira</h2>
+                <span onclick="closeModal('medianModal')" class="cursor-pointer text-gray-400 hover:text-gray-600 text-2xl">&times;</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p class="text-xs text-blue-600 font-semibold uppercase">Média Custo Unit.</p>
+                    <p id="meanCostDisplay" class="text-xl font-bold text-blue-900">R$ 0,00</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p class="text-xs text-blue-600 font-semibold uppercase">Mediana Custo Unit.</p>
+                    <p id="medianCostDisplay" class="text-xl font-bold text-blue-900">R$ 0,00</p>
+                </div>
+                 <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                    <p class="text-xs text-green-600 font-semibold uppercase">Média Venda Unit.</p>
+                    <p id="meanSaleDisplay" class="text-xl font-bold text-green-900">R$ 0,00</p>
+                </div>
+                 <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                    <p class="text-xs text-green-600 font-semibold uppercase">Mediana Venda Unit.</p>
+                    <p id="medianSaleDisplay" class="text-xl font-bold text-green-900">R$ 0,00</p>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Análise Detalhada (Lógica: Piso de Qualidade ou Lucro 100%)</h3>
+            <p class="text-xs text-gray-500 mb-2">A sugestão respeita o valor atual como piso (R$ 30,00 Vidro / R$ 35,00 Cerâmica) e aplica margem de 100% sobre custos se estes subirem.</p>
+            <div class="overflow-y-auto max-h-96 border rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modelo</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Custo Atual</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Evolução Custo</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Preço Venda Atual</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-indigo-700 uppercase">Preço Sugerido</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="medianListBody" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+             <div class="mt-6 flex justify-end">
+                <button onclick="closeModal('medianModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Source
+        // ATUALIZAÇÃO DE PREÇOS: 
+        // Custo Base: R$ 2.00
+        // Venda Vidro (3D/Comum): R$ 30.00
+        // Venda Cerâmica: R$ 35.00
+        const inventoryData = [
+            { type: "3D PRIVACIDADE", model: "IP 14 PRO MAX", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D PRIVACIDADE", model: "IP 14", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D PRIVACIDADE", model: "IP 13 MINI", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2021, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D CERÂMICA", model: "IP XS MAX / IP 11 PRO MAX", brand: "IPHONE", material: "CERÂMICA", qty: 2, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 35.00 },
+            { type: "3D CERÂMICA", model: "24 PLUS", brand: "SAMSUNG", material: "CERÂMICA", qty: 2, year: 2024, sales: 0, cost: 2.00, lastCost: 2.00, sale: 35.00 },
+            { type: "3D COMUM", model: "A 24 4G", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2023, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "A 10", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "A 31", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2020, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI 14C", brand: "REDMI", material: "VIDRO", qty: 5, year: 2024, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "POCO M3", brand: "REDMI", material: "VIDRO", qty: 5, year: 2020, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI 9T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2021, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI POCO 9 SE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI NOTE 7", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI 8T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI POCO M5", brand: "REDMI", material: "VIDRO", qty: 1, year: 2022, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI 9 LITE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "ZENFONE ZB 633 MAX M2", brand: "ZENFONE", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "REDMI 14 C", brand: "REDMI", material: "VIDRO", qty: 1, year: 2024, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
+            { type: "3D COMUM", model: "MOTO ONE", brand: "MOTOROLA", material: "VIDRO", qty: 1, year: 2018, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 }
+        ];
+
+        let filteredData = [...inventoryData]; 
+        let sessionApprovals = new Set();
+        let shoppingCart = [];
+
+        function isPriority(item) {
+            if (item.year >= 2021) return true;
+            return false;
+        }
+
+        // --- FILTER LOGIC ---
+        function filterTable() {
+            const fType = document.getElementById('filterType').value.toLowerCase();
+            const fModel = document.getElementById('filterModel').value.toLowerCase();
+            const fMaterial = document.getElementById('filterMaterial').value.toLowerCase();
+            const fYear = document.getElementById('filterYear').value;
+            const fQty = document.getElementById('filterQty').value;
+            const fSales = document.getElementById('filterSales').value;
+            const fStatus = document.getElementById('filterStatus').value;
+
+            filteredData = inventoryData.filter(item => {
+                const priority = isPriority(item);
+                const statusText = priority ? 'PRIORITÁRIO' : 'NÃO PRIORITÁRIO';
+                
+                // Matches
+                const matchType = item.type.toLowerCase().includes(fType);
+                const matchModel = (item.model + ' ' + item.brand).toLowerCase().includes(fModel);
+                const matchMaterial = item.material.toLowerCase().includes(fMaterial);
+                const matchYear = fYear ? item.year.toString().includes(fYear) : true;
+                const matchQty = fQty ? item.qty <= parseInt(fQty) : true;
+                const matchSales = fSales ? item.sales >= parseInt(fSales) : true;
+                const matchStatus = fStatus ? statusText === fStatus : true;
+
+                return matchType && matchModel && matchMaterial && matchYear && matchQty && matchSales && matchStatus;
+            });
+
+            renderTable();
+        }
+
+        // --- EXPORT LOGIC ---
+        function openExportModal() {
+            document.getElementById('exportModal').style.display = 'block';
+        }
+
+        function generateXLS() {
+            const checkboxes = document.querySelectorAll('.export-col:checked');
+            const selectedCols = Array.from(checkboxes).map(cb => cb.value);
+            
+            const colMap = {
+                type: 'Tipo',
+                model: 'Modelo',
+                brand: 'Marca',
+                material: 'Material',
+                year: 'Ano',
+                cost: 'Custo Unit.',
+                sale: 'Venda Unit.',
+                qty: 'Estoque',
+                sales: 'Saída',
+                status: 'Status'
+            };
+
+            let table = '<table><thead><tr>';
+            selectedCols.forEach(col => {
+                table += `<th>${colMap[col]}</th>`;
+            });
+            table += '</tr></thead><tbody>';
+
+            filteredData.forEach(item => {
+                table += '<tr>';
+                selectedCols.forEach(col => {
+                    let val = '';
+                    if (col === 'status') {
+                        val = isPriority(item) ? 'PRIORITÁRIO' : 'NÃO PRIORITÁRIO';
+                    } else if (col === 'cost' || col === 'sale') {
+                        val = item[col].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    } else {
+                        val = item[col];
+                    }
+                    table += `<td>${val}</td>`;
+                });
+                table += '</tr>';
+            });
+            table += '</tbody></table>';
+
+            const blob = new Blob(['\ufeff', table], {
+                type: 'application/vnd.ms-excel;charset=utf-8'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+            downloadLink.href = url;
+            downloadLink.download = "Relatorio_Estoque.xls";
+            
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            closeModal('exportModal');
+        }
+
+        // --- AI COMMAND PROCESSING ---
+        function processAICommand() {
+            const input = document.getElementById('aiInput');
+            const text = input.value.toLowerCase().trim();
+            if (!text) return;
+
+            let action = null; 
+            if (text.includes('vendi') || text.includes('venda') || text.includes('saida') || text.includes('saiu')) {
+                action = 'sell';
+            } else if (text.includes('comprei') || text.includes('compra') || text.includes('entrada') || text.includes('chegou') || text.includes('adicionar')) {
+                action = 'buy';
+            }
+
+            const numberMatch = text.match(/\d+/);
+            const qty = numberMatch ? parseInt(numberMatch[0]) : 1; 
+
+            let productQuery = text
+                .replace(/vendi|venda|saida|saiu|comprei|compra|entrada|chegou|adicionar/g, '')
+                .replace(/\d+/g, '')
+                .trim();
+            
+            let bestMatchIndex = -1;
+            let highestScore = 0;
+
+            inventoryData.forEach((item, index) => {
+                const fullString = `${item.model} ${item.brand} ${item.type}`.toLowerCase();
+                const queryParts = productQuery.split(' ');
+                let score = 0;
+                queryParts.forEach(part => {
+                    if (part.length > 1 && fullString.includes(part)) score++;
+                });
+
+                if (score > highestScore) {
+                    highestScore = score;
+                    bestMatchIndex = index;
+                }
+            });
+
+            if (action && bestMatchIndex !== -1 && highestScore > 0) {
+                const item = inventoryData[bestMatchIndex];
+                
+                if (action === 'sell') {
+                    if (item.qty >= qty) {
+                        item.qty -= qty;
+                        item.sales += qty;
+                        showFeedback(`✅ Venda registrada: -${qty} ${item.model}. Estoque atual: ${item.qty}`, 'success');
+                    } else {
+                        showFeedback(`⚠️ Erro: Estoque insuficiente de ${item.model} para vender ${qty}.`, 'error');
+                    }
+                } else if (action === 'buy') {
+                    item.qty += qty;
+                    showFeedback(`✅ Entrada registrada: +${qty} ${item.model}. Estoque atual: ${item.qty}`, 'success');
+                }
+                
+                filterTable(); // Re-apply filters to refresh view
+                input.value = ''; 
+            } else {
+                if (!action) showFeedback('❓ Não entendi a ação. Use "Vendi" ou "Chegou".', 'error');
+                else showFeedback('❓ Não encontrei o modelo especificado.', 'error');
+            }
+        }
+
+        function showFeedback(msg, type) {
+            const el = document.getElementById('aiFeedback');
+            el.innerHTML = msg;
+            el.className = `mt-3 p-3 rounded-lg text-sm block ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            setTimeout(() => { el.className = 'hidden mt-3 p-3 rounded-lg text-sm'; }, 5000);
+        }
+
+        // --- RENDER MAIN TABLE (Uses filteredData) ---
+        function renderTable() {
+            const tbody = document.getElementById('inventoryTable');
+            tbody.innerHTML = '';
+
+            filteredData.forEach((item) => {
+                // Find original index to allow editing
+                const originalIndex = inventoryData.indexOf(item);
+                
+                const priority = isPriority(item);
+                const statusClass = priority ? 'priority-high' : 'priority-low';
+                const statusText = priority ? 'PRIORITÁRIO' : 'NÃO PRIORITÁRIO';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <div class="font-bold">${item.model}</div>
+                        <div class="text-xs text-gray-500">${item.brand}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.material}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${item.year}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right cursor-pointer hover:text-indigo-600" onclick="editPrice(${originalIndex}, 'cost')" title="Editar Custo">
+                        R$ ${item.cost.toFixed(2)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right cursor-pointer hover:text-indigo-600" onclick="editPrice(${originalIndex}, 'sale')" title="Editar Venda">
+                        R$ ${item.sale.toFixed(2)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-center ${item.qty <= 1 ? 'text-red-600' : 'text-gray-900'}">${item.qty}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center cursor-pointer hover:bg-gray-100" onclick="editSales(${originalIndex})" title="Clique para editar manual">
+                        ${item.sales}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function editSales(index) {
+            const currentSales = inventoryData[index].sales;
+            const newVal = prompt(`Atualizar vendas para ${inventoryData[index].model}:`, currentSales);
+            if (newVal !== null && !isNaN(newVal)) {
+                inventoryData[index].sales = parseInt(newVal);
+                filterTable(); // Refresh
+            }
+        }
+
+        function editPrice(index, type) {
+            const item = inventoryData[index];
+            const currentVal = type === 'cost' ? item.cost : item.sale;
+            const label = type === 'cost' ? 'Custo' : 'Venda';
+            const newVal = prompt(`Alterar Preço de ${label} para ${item.model}:`, currentVal);
+            
+            if (newVal !== null && !isNaN(parseFloat(newVal))) {
+                const val = parseFloat(newVal);
+                if (type === 'cost') {
+                    item.lastCost = item.cost;
+                    item.cost = val;
+                } else {
+                    item.sale = val;
+                }
+                filterTable(); // Refresh
+            }
+        }
+
+        // --- SHOPPING CART LOGIC ---
+        function initShoppingSession() {
+            shoppingCart = [];
+            const lowStockItems = inventoryData.filter(item => item.qty <= 1);
+            
+            lowStockItems.forEach(item => {
+                const isItemPriority = isPriority(item);
+                const itemKey = item.model;
+                const isApproved = sessionApprovals.has(itemKey);
+
+                if (isItemPriority || isApproved) {
+                    shoppingCart.push({ item: item, buyQty: 5 });
+                }
+            });
+            renderShoppingModal();
+            document.getElementById('shoppingModal').style.display = 'block';
+        }
+        
+        function renderShoppingModal() {
+            const cartListBody = document.getElementById('shoppingListCart');
+            const manualListBody = document.getElementById('shoppingListManual');
+            
+            cartListBody.innerHTML = '';
+            manualListBody.innerHTML = '';
+
+            // Render Cart
+            if (shoppingCart.length === 0) {
+                document.getElementById('emptyCartMsg').style.display = 'flex';
+                document.getElementById('unifiedActionArea').classList.add('hidden');
+            } else {
+                document.getElementById('emptyCartMsg').style.display = 'none';
+                document.getElementById('unifiedActionArea').classList.remove('hidden');
+
+                shoppingCart.forEach((cartItem, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            <div class="font-bold">${cartItem.item.model}</div>
+                            <div class="text-xs text-gray-500">${cartItem.item.brand} - ${cartItem.item.material}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center text-sm font-bold text-red-600">${cartItem.item.qty}</td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="updateCartQty(${index}, -1)" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold flex items-center justify-center">-</button>
+                                <input type="number" value="${cartItem.buyQty}" onchange="setCartQty(${index}, this.value)" class="w-16 text-center border border-gray-300 rounded-md py-1 font-semibold text-indigo-700">
+                                <button onclick="updateCartQty(${index}, 1)" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold flex items-center justify-center">+</button>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50" title="Remover">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </td>
+                    `;
+                    cartListBody.appendChild(tr);
+                });
+                updateUnifiedLink();
+            }
+
+            // Render Manual List
+            const allLowStock = inventoryData.filter(item => item.qty <= 1);
+            const itemsNotInCart = allLowStock.filter(lsItem => !shoppingCart.some(cartItem => cartItem.item === lsItem));
+
+            if (itemsNotInCart.length === 0) {
+                 document.getElementById('emptyManualMsg').style.display = 'block';
+            } else {
+                 document.getElementById('emptyManualMsg').style.display = 'none';
+                 itemsNotInCart.forEach(item => {
+                     const tr = document.createElement('tr');
+                     tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-700">${item.model}</td>
+                        <td class="px-4 py-3 text-center text-sm font-bold text-red-600">${item.qty}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="addToCartManual('${item.model}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded border border-indigo-200 transition">
+                                Adicionar
+                            </button>
+                        </td>
+                     `;
+                     manualListBody.appendChild(tr);
+                 });
+            }
+        }
+
+        function updateCartQty(index, delta) {
+            const newQty = shoppingCart[index].buyQty + delta;
+            if (newQty >= 1) {
+                shoppingCart[index].buyQty = newQty;
+                renderShoppingModal();
+            }
+        }
+
+        function setCartQty(index, value) {
+            const val = parseInt(value);
+            if (val >= 1) {
+                shoppingCart[index].buyQty = val;
+                renderShoppingModal();
+            }
+        }
+
+        function removeFromCart(index) {
+            shoppingCart.splice(index, 1);
+            renderShoppingModal();
+        }
+
+        function addToCartManual(modelName) {
+            const item = inventoryData.find(i => i.model === modelName);
+            if (item) {
+                sessionApprovals.add(modelName);
+                shoppingCart.push({ item: item, buyQty: 5 });
+                renderShoppingModal();
+            }
+        }
+
+        function updateUnifiedLink() {
+            let itemListText = "LISTA DE REPOSIÇÃO DE ESTOQUE:\n\n";
+            shoppingCart.forEach(c => {
+                itemListText += `- ${c.item.model} (${c.item.brand}): Comprar ${c.buyQty} unidades\n`;
+            });
+            const title = "[Tarefa] - COMPRA DE ESTOQUE: Películas";
+            const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(itemListText)}`;
+            document.getElementById('unifiedCalendarLink').href = calendarUrl;
+        }
+
+        // --- FINANCIAL & MEDIAN LOGIC ---
+        function calculateMedian(arr) {
+            if (arr.length === 0) return 0;
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+
+        function calculateMean(arr) {
+            if (arr.length === 0) return 0;
+            const sum = arr.reduce((a, b) => a + b, 0);
+            return sum / arr.length;
+        }
+
+        function calculateMedianReport() {
+            const costs = inventoryData.map(i => i.cost);
+            const salesPrices = inventoryData.map(i => i.sale);
+            
+            const meanCost = calculateMean(costs);
+            const medianCost = calculateMedian(costs);
+            const meanSale = calculateMean(salesPrices);
+            const medianSale = calculateMedian(salesPrices);
+            
+            document.getElementById('meanCostDisplay').innerText = `R$ ${meanCost.toFixed(2)}`;
+            document.getElementById('medianCostDisplay').innerText = `R$ ${medianCost.toFixed(2)}`;
+            document.getElementById('meanSaleDisplay').innerText = `R$ ${meanSale.toFixed(2)}`;
+            document.getElementById('medianSaleDisplay').innerText = `R$ ${medianSale.toFixed(2)}`;
+
+            const tbody = document.getElementById('medianListBody');
+            tbody.innerHTML = '';
+            
+            inventoryData.forEach(item => {
+                const diff = item.cost - item.lastCost;
+                const percent = item.lastCost > 0 ? (diff / item.lastCost) * 100 : 0;
+                
+                let trendIcon = '➖';
+                let trendClass = 'trend-neutral';
+                let trendText = '0.0%';
+
+                if (diff > 0) {
+                    trendIcon = '▲';
+                    trendClass = 'trend-up'; 
+                    trendText = `+${percent.toFixed(1)}%`;
+                } else if (diff < 0) {
+                    trendIcon = '▼';
+                    trendClass = 'trend-down';
+                    trendText = `${percent.toFixed(1)}%`;
+                }
+
+                // NEW LOGIC: Floor (Quality) + Min Markup (100%)
+                const minMarkupPrice = item.cost * 2; // Rule: 100% Minimum Profit
+                const floorPrice = item.sale; // Rule: Never lower than current assigned price (Quality tier floor)
+                const idealPrice = Math.max(minMarkupPrice, floorPrice);
+                
+                // Status check: Is current price BELOW the ideal suggestion?
+                // Since idealPrice is at least current price (floorPrice), it can never be *higher* than idealPrice in a way that triggers "Above Ideal" warning, 
+                // but if cost spikes so that minMarkupPrice > floorPrice, then idealPrice > currentPrice.
+                const isPriceGood = item.sale >= idealPrice;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-sm text-gray-700 font-medium">${item.model}</td>
+                    <td class="px-4 py-3 text-right text-sm text-gray-500">R$ ${item.cost.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-center text-sm font-bold ${trendClass}">
+                        ${trendIcon} ${trendText}
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm text-gray-700">R$ ${item.sale.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-indigo-700">
+                        R$ ${idealPrice.toFixed(2)}
+                    </td>
+                    <td class="px-4 py-3 text-center text-sm text-gray-500">
+                         ${!isPriceGood ? '<span class="text-xs text-red-500 font-bold">Aumentar Preço</span>' : '<span class="text-xs text-green-600 font-bold">Adequado</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('medianModal').style.display = 'block';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        }
+
+        // Init
+        filterTable(); // Initially render full table
+
+    </script>
+</body>
+</html>
