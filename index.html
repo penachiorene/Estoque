@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Sistema Avançado de Gestão de Estoque de Películas">
+    <title>Estoque | Rene Penachio</title>
+    
+    <!-- Mobile Config -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#fafafa">
+
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            900: '#7c2d12',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'float': '0 10px 40px -10px rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- MINIMALIST RESET --- */
+        body { 
+            background-color: #fafafa; 
+            color: #1f2937;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- UI ELEMENTS --- */
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            transition: all 0.2s ease;
+            background-color: white;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            text-transform: uppercase;
+        }
+        .btn-action:hover {
+            border-color: #d1d5db;
+            background-color: #f9fafb;
+            transform: translateY(-1px);
+        }
+        .btn-action:active { transform: translateY(0); }
+
+        .btn-icon-small {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        .btn-icon-small:hover { background-color: #e5e7eb; color: #374151; }
+        .btn-icon-small:active { transform: scale(0.95); }
+
+        .btn-move {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-move-up { background-color: #dcfce7; color: #166534; }
+        .btn-move-up:hover { background-color: #bbf7d0; }
+        .btn-move-down { background-color: #fee2e2; color: #991b1b; }
+        .btn-move-down:hover { background-color: #fecaca; }
+
+        /* --- INPUTS --- */
+        .input-clean {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.875rem;
+            width: 100%;
+            transition: all 0.2s;
+            color: #374151;
+        }
+        .input-clean:hover { background-color: #f3f4f6; }
+        .input-clean:focus {
+            outline: none;
+            background-color: white;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        .input-clean::placeholder { color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; }
+
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+        /* --- MODAL --- */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .modal.show { opacity: 1; }
+        .modal-content {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #f3f4f6;
+            transform: scale(0.95);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 90%;
+            max-width: 800px;
+            margin: 2rem auto;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal.show .modal-content { transform: scale(1); }
+
+        /* --- CUSTOM DIALOGS --- */
+        .dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .dialog-box {
+            background: white;
+            padding: 2rem;
+            width: 90%;
+            max-width: 380px;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+            text-align: center;
+        }
+        .dialog-overlay.active { display: flex; }
+        .dialog-overlay.active .dialog-box { transform: scale(1); }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            body { background: white; color: black; }
+            header, footer, .btn-action, .btn-icon-small, .closeModalBtn, #navButtons, #modalsContainer, .modal { display: none !important; }
+            .bg-white { box-shadow: none !important; border: none !important; }
+            input { border: none !important; background: transparent !important; padding: 0 !important; }
+            th, td { border-bottom: 1px solid #ddd !important; padding: 4px !important; font-size: 10pt !important; }
+            /* Hide columns that don't make sense in print */
+            th:nth-child(8), td:nth-child(8) { display: none; } /* Saiu */
+            /* Show full table */
+            .overflow-x-auto { overflow: visible !important; }
+            main { padding: 0 !important; margin: 0 !important; }
+            
+            /* Print Specific Header */
+            #printHeader { display: block !important; margin-bottom: 20px; text-align: center; }
+            #printHeader h1 { font-size: 18pt; font-weight: bold; }
+            #printHeader p { font-size: 10pt; color: #666; }
+        }
+        #printHeader { display: none; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+        
+        .search-loader {
+            border: 2px solid #f3f4f6;
+            border-radius: 50%;
+            border-top: 2px solid #f97316;
+            width: 20px; height: 20px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 640px) {
+            .btn-action { flex: 1; padding: 0.8rem; font-size: 0.7rem; flex-direction: column; gap: 0.2rem; }
+            .modal-content { width: 95%; margin: 1rem auto; border-radius: 1rem; }
+            th, td { padding-left: 0.2rem; padding-right: 0.2rem; }
+            .hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-[#fafafa]">
+
+    <!-- Print Header -->
+    <div id="printHeader">
+        <h1>Relatório de Estoque - Películas</h1>
+        <p>Rene Penachio</p>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-[#fafafa]/90 backdrop-blur-md border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-lg font-semibold text-gray-800 tracking-tight">Estoque <span class="text-brand-500">Inteligente</span></h1>
+                <p class="text-[10px] text-gray-400 font-medium tracking-widest uppercase">Rene Penachio &bull; 2026</p>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-3 w-full md:w-auto" id="navButtons">
+                 <!-- Generated by JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+        
+        <!-- Table Container -->
+        <div class="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full" id="mainTable">
+                    <thead class="bg-gray-50/50 border-b border-gray-100">
+                        <tr>
+                            <!-- Filters injected by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody" class="bg-white divide-y divide-gray-50">
+                        <!-- Rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-8 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
+            <p class="text-[10px] text-gray-400 uppercase tracking-widest">Persistência Ativa &bull; Design Fluido</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-8">
+        <div class="max-w-7xl mx-auto px-4 flex justify-center">
+            <button id="btnResetSystem" class="group flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-wide">
+                <span class="w-2 h-2 rounded-full bg-gray-300 group-hover:bg-red-500 transition-colors"></span>
+                Resetar Sistema
+            </button>
+        </div>
+    </footer>
+
+    <!-- Modals Container -->
+    <div id="modalsContainer"></div>
+
+    <!-- Custom Dialog Modal -->
+    <div id="dialogOverlay" class="dialog-overlay">
+        <div class="dialog-box">
+            <div class="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-2xl text-brand-500">!</span>
+            </div>
+            <h3 id="dialogTitle" class="text-base font-bold text-gray-800 mb-2">Mensagem</h3>
+            <p id="dialogMessage" class="text-sm text-gray-500 mb-6 leading-relaxed"></p>
+            
+            <div id="dialogInputContainer" class="hidden mb-6">
+                <input type="text" id="dialogInput" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all text-center font-medium" />
+            </div>
+            
+            <div class="flex gap-3 justify-center">
+                <button id="dialogCancel" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors uppercase hidden">Cancelar</button>
+                <button id="dialogOk" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gray-900 hover:bg-black shadow-lg transition-all uppercase">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * SISTEMA DE GESTÃO DE ESTOQUE - CORE ENGINE
+         * Arquitetura: MVC (Model-View-Controller) simplificado.
+         */
+
+        // --- DATABASE: PLANILHA MESTRA ---
+        const COMPATIBILITY_DB = [
+            { base: "Samsung A12", compatible: ["A02", "A02s", "M12", "M02", "A32 5G", "A13 5G"], notes: "Base universal. Atenção: A13 5G serve, A13 4G não." },
+            { base: "Samsung A13 4G", compatible: ["A23 4G", "A23 5G", "M13 4G", "M23 5G", "F23"], notes: "Notch em 'V' suave." },
+            { base: "Samsung A03 Core", compatible: ["A03", "A04e", "M04"], notes: "Linha A0x compartilha painel PLS." },
+            { base: "Samsung A24", compatible: ["Samsung A15", "A25 5G", "M34 5G", "F34"], notes: "Key Island. A24 é o molde 'pai'." },
+            { base: "Samsung A54 5G", compatible: ["S23 FE", "A35 (Adaptável)", "A55 (Adaptável)"], notes: "S23 FE usa vidro do A54. A35/A55 são maiores, mas vidro 'case friendly' serve." },
+            { base: "Samsung A05", compatible: ["A05s", "M05", "F05", "Redmi 13C", "Realme C51"], notes: "Tela universal 6.7 Gota." },
+            { base: "Moto G54", compatible: ["G34", "G14", "G24", "G24 Power"], notes: "Furo Central 6.5\" padronizado." },
+            { base: "Moto G22", compatible: ["E32", "G32", "E13 (Parcial)"], notes: "Cuidado com sensor no E13." },
+            { base: "Moto G10", compatible: ["Moto G30", "Moto G20", "E7 Plus", "E7 Power", "G9 Play"], notes: "Notch gota legado." },
+            { base: "Redmi Note 12 4G", compatible: ["Poco X5 5G"], notes: "Chassi idêntico." },
+            { base: "Redmi 13C", compatible: ["Poco C65", "Realme C51", "Samsung A05"], notes: "Chassi genérico 6.74\"." },
+            { base: "Redmi Note 13 4G", compatible: ["Poco M6 Pro"], notes: "Design plano bordas finas." },
+            { base: "Universal 6.5\"", compatible: ["A12", "G22", "Redmi 9A", "Redmi 10A", "E7 Power"], notes: "Cobre 70% dos Androids (143x78mm)." },
+            { base: "Universal 6.7\"", compatible: ["iPhone Pro Max", "S24 Plus", "A05"], notes: "Dimensões aprox: 154x77mm." }
+        ];
+
+        // --- CUSTOM DIALOG SYSTEM ---
+        class DialogSystem {
+            static show(type, message, defaultValue = '', callback = null) {
+                const overlay = document.getElementById('dialogOverlay');
+                const title = document.getElementById('dialogTitle');
+                const msg = document.getElementById('dialogMessage');
+                const inputCont = document.getElementById('dialogInputContainer');
+                const input = document.getElementById('dialogInput');
+                const btnOk = document.getElementById('dialogOk');
+                const btnCancel = document.getElementById('dialogCancel');
+
+                overlay.classList.add('active');
+                inputCont.classList.add('hidden');
+                btnCancel.classList.add('hidden');
+                
+                msg.innerHTML = message.replace(/\n/g, '<br>');
+                input.value = defaultValue;
+
+                if (type === 'alert') {
+                    title.textContent = 'Aviso';
+                    btnOk.textContent = 'Entendido';
+                    btnOk.onclick = () => { overlay.classList.remove('active'); if(callback) callback(); };
+                } else if (type === 'confirm') {
+                    title.textContent = 'Confirmação';
+                    btnOk.textContent = 'Sim, continuar';
+                    btnOk.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-lg transition-all uppercase";
+                    btnCancel.classList.remove('hidden');
+                    btnOk.onclick = () => { overlay.classList.remove('active'); if(callback) callback(true); };
+                    btnCancel.onclick = () => { overlay.classList.remove('active'); if(callback) callback(false); };
+                } else if (type === 'prompt') {
+                    title.textContent = 'Inserir Dados';
+                    btnOk.textContent = 'Salvar';
+                    btnOk.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-lg transition-all uppercase";
+                    inputCont.classList.remove('hidden');
+                    btnCancel.classList.remove('hidden');
+                    input.focus();
+                    input.onkeydown = (e) => { if(e.key === 'Enter') btnOk.click(); };
+                    btnOk.onclick = () => { overlay.classList.remove('active'); if(callback) callback(input.value); };
+                    btnCancel.onclick = () => { overlay.classList.remove('active'); if(callback) callback(null); };
+                }
+            }
+            
+            static alert(msg) { this.show('alert', msg); }
+            static confirm(msg, cb) { this.show('confirm', msg, '', cb); }
+            static prompt(msg, def, cb) { this.show('prompt', msg, def, cb); }
+        }
+
+        // --- SERVICES ---
+        class StorageService {
+            static KEY = 'estoque_pelicias_data_v4'; 
+            static save(data) { try { localStorage.setItem(this.KEY, JSON.stringify(data)); return true; } catch (e) { DialogSystem.alert("ERRO CRÍTICO: Armazenamento cheio."); return false; } }
+            static load() { return JSON.parse(localStorage.getItem(this.KEY)); }
+            static clear() { localStorage.removeItem(this.KEY); }
+        }
+
+        class Utils {
+            static formatCurrency(value) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); }
+            static async sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+        }
+
+        // --- MODEL ---
+        class InventoryModel {
+            constructor() {
+                this.data = [];
+                this.init();
+            }
+
+            init() {
+                const loaded = StorageService.load();
+                if (loaded) {
+                    this.data = this.hydrate(loaded);
+                } else {
+                    this.data = []; 
+                }
+            }
+
+            hydrate(data) {
+                return data.map(item => {
+                    const year = Number(item.year);
+                    let isPriority = false;
+                    
+                    if (item.customPriority !== undefined) {
+                        isPriority = item.customPriority;
+                    } else {
+                        isPriority = year >= 2022;
+                    }
+
+                    return {
+                        ...item,
+                        qty: Number(item.qty),
+                        cost: Number(item.cost),
+                        sale: Number(item.sale),
+                        sales: Number(item.sales || 0),
+                        year: year,
+                        isPriority: isPriority, 
+                        customPriority: item.customPriority, 
+                        priceHistory: Array.isArray(item.priceHistory) ? item.priceHistory : [{ date: new Date(), price: Number(item.sale) }]
+                    };
+                });
+            }
+
+            save() { StorageService.save(this.data); }
+
+            addItem(item) {
+                const exists = this.data.find(i => i.model === item.model && i.brand === item.brand && i.type === item.type);
+                if (exists) throw new Error(`PRODUTO JÁ CADASTRADO: ${item.model}`);
+                
+                const isPriority = item.year >= 2022;
+
+                this.data.push({
+                    ...item,
+                    qty: Number(item.qty),
+                    cost: Number(item.cost),
+                    sale: Number(item.sale),
+                    sales: 0,
+                    year: Number(item.year),
+                    isPriority: isPriority,
+                    priceHistory: [{ date: new Date(), price: item.sale }]
+                });
+                this.save();
+            }
+
+            updateItem(index, updates) {
+                if (this.data[index]) {
+                    Object.assign(this.data[index], updates);
+                    if (updates.year && this.data[index].customPriority === undefined) {
+                         this.data[index].isPriority = updates.year >= 2022;
+                    }
+                    this.save();
+                }
+            }
+            
+            togglePriority(index) {
+                if (this.data[index]) {
+                    const newState = !this.data[index].isPriority;
+                    this.data[index].isPriority = newState;
+                    this.data[index].customPriority = newState; 
+                    this.save();
+                }
+            }
+            
+            checkOldDevicesAndDemote() {
+                let changedCount = 0;
+                this.data.forEach((item, index) => {
+                    if (item.year < 2022 && item.isPriority) {
+                         this.data[index].isPriority = false;
+                         this.data[index].customPriority = false; 
+                         changedCount++;
+                    }
+                });
+                if (changedCount > 0) this.save();
+                return changedCount;
+            }
+
+            deleteItem(index) { this.data.splice(index, 1); this.save(); }
+            reset() { this.data = []; StorageService.clear(); }
+        }
+
+        // --- VIEW ---
+        class View {
+            constructor() {
+                this.app = document.getElementById('inventoryTableBody');
+                this.renderModals();
+                this.setupGlobalListeners();
+            }
+
+            renderModals() {
+                const container = document.getElementById('modalsContainer');
+                container.innerHTML = `
+                    <!-- Reset Modal -->
+                    <div id="resetModal" class="modal"><div class="modal-content max-w-sm"><div class="p-8 text-center"><div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-50 mb-6"><svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div><h3 class="text-xl font-bold text-gray-900 mb-2">Zona de Perigo</h3><p class="text-sm text-gray-500 mb-6">Esta ação apagará permanentemente todos os dados do sistema. Não é possível desfazer.</p><div class="mb-6 text-left"><label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Senha Mestra</label><div class="relative"><input type="password" id="resetPassword" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all" placeholder="Digite a senha..."><button type="button" id="togglePwdBtn" class="absolute inset-y-0 right-0 px-4 text-gray-400 hover:text-gray-600">👁️</button></div></div><div class="flex gap-3"><button class="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 transition closeModalBtn" data-modal="resetModal">Cancelar</button><button id="confirmResetBtn" class="flex-1 py-3 rounded-xl font-semibold text-sm bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-200 transition">Confirmar</button></div></div></div></div>
+
+                    <!-- Shopping / Import Modal -->
+                    <div id="shoppingModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center p-6 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-800">Operações</h2><button class="text-gray-400 hover:text-gray-600 transition closeModalBtn" data-modal="shoppingModal">&times;</button></div><div class="p-6 md:p-8">
+                    
+                    <div id="legacySyncMsg" class="hidden mb-4 p-3 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-2"><div class="search-loader !w-4 !h-4 !border-blue-200 !border-t-blue-600"></div> Sincronizando base de legados (Web)...</div>
+                    
+                    <div class="bg-brand-50/50 rounded-2xl p-6 mb-8 border border-brand-100/50"><h3 class="text-xs font-bold text-brand-600 mb-4 flex items-center gap-2 uppercase tracking-wide">Registro Manual</h3><div class="flex items-center gap-3 mb-6"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="newItemToggle" class="sr-only peer"><div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div><span class="ml-3 text-sm font-medium text-gray-600">Novo Produto</span></label></div><div id="existingItemArea" class="mb-6"><select id="manualItemSelect" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:border-brand-500 outline-none"></select></div><div id="newItemArea" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Tipo</label><input type="text" id="newType" placeholder="Ex: 3D Comum" class="input-clean bg-gray-50 uppercase"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Marca</label><input type="text" id="newBrand" placeholder="Ex: Samsung" class="input-clean bg-gray-50 uppercase"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Modelo</label><input type="text" id="newModel" placeholder="Ex: A54" class="input-clean bg-gray-50 uppercase"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Material</label><select id="newMaterial" class="input-clean bg-gray-50 uppercase h-[34px]"><option value="VIDRO">Vidro</option><option value="CERÂMICA">Cerâmica</option><option value="GEL">Gel</option><option value="PRIVACIDADE">Privacidade</option></select></div><div class="col-span-1 md:col-span-2 lg:col-span-1"><label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Custo</label><input type="number" inputmode="decimal" step="0.01" id="newCost" placeholder="R$ 2,00" class="input-clean bg-gray-50"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Ano</label><input type="number" id="newYear" placeholder="2026" value="2026" class="input-clean bg-gray-50"></div></div><div class="flex flex-col md:flex-row gap-4 items-end"><div class="w-full md:w-32"><label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Qtd.</label><input type="number" id="manualQty" min="0" value="1" class="w-full text-center font-bold text-gray-800 bg-white border border-gray-200 rounded-xl py-3 text-lg focus:border-brand-500 outline-none"></div><div class="flex-1 w-full grid grid-cols-2 gap-3"><button id="btnBuy" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-100">Entrada (Compra)</button><button id="btnSell" class="bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-brand-100">Saída (Venda)</button></div></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="space-y-4"><h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide border-b border-gray-100 pb-2">Reposição Prioritária</h3><div class="overflow-y-auto max-h-60 pr-2"><table class="w-full"><tbody id="shoppingListCart" class="text-sm text-gray-600 divide-y divide-gray-50"></tbody></table><div id="emptyCartMsg" class="py-8 text-center text-xs text-gray-300 uppercase">Tudo em ordem</div></div><div id="unifiedActionArea" class="hidden pt-2"><a id="unifiedCalendarLink" href="#" target="_blank" class="block w-full bg-gray-900 hover:bg-black text-center text-white font-bold py-3 rounded-xl text-xs uppercase transition">Agendar Compra (Itens Prioritários)</a></div></div><div class="space-y-4"><h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide border-b border-gray-100 pb-2">Baixo Estoque (Ñ Prioritário)</h3><div class="overflow-y-auto max-h-60 pr-2"><table class="w-full"><tbody id="shoppingListManual" class="text-sm text-gray-600 divide-y divide-gray-50"></tbody></table><div id="emptyManualMsg" class="py-8 text-center text-xs text-gray-300 uppercase">Nenhum item</div></div></div></div><div class="mt-8 pt-6 border-t border-gray-100"><h3 class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">Importação em Lote</h3><div class="flex gap-3"><label class="flex-1 cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-200 border-dashed rounded-xl px-4 py-3 text-xs text-gray-500 text-center transition"><input type="file" id="batchFileUpload" accept=".txt,.csv" class="hidden"/><span class="uppercase">Selecionar Arquivo .TXT</span></label><button id="btnProcessBatch" class="px-6 bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold rounded-xl uppercase transition">Processar</button></div></div></div></div></div>
+
+                    <!-- News Modal -->
+                    <div id="newsModal" class="modal"><div class="modal-content max-w-2xl"><div class="flex justify-between items-center p-6 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-800">Novidades 2026</h2><button class="text-gray-400 hover:text-gray-600 transition closeModalBtn" data-modal="newsModal">&times;</button></div><div class="p-8"><div id="newsLoading" class="text-center py-12"><div class="search-loader mb-4 mx-auto"></div><p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Buscando Lançamentos e Rumores...</p></div><div id="newsResults" class="hidden space-y-3 max-h-[500px] overflow-y-auto pr-2"></div></div></div></div>
+
+                    <!-- Compatibility Modal -->
+                    <div id="compatModal" class="modal"><div class="modal-content max-w-lg"><div class="flex justify-between items-center p-6 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-800">Compatibilidade Inteligente</h2><button class="text-gray-400 hover:text-gray-600 transition closeModalBtn" data-modal="compatModal">&times;</button></div><div class="p-8"><div class="relative flex items-center mb-8"><input type="text" id="compatInput" placeholder="Ex: Poco X5..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-4 pr-12 py-3 text-sm focus:border-brand-500 outline-none uppercase"><button id="btnCompatSearch" class="absolute right-2 p-1.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button></div><div id="compatResult" class="hidden fade-in"></div></div></div></div>
+
+                    <!-- Export Modal -->
+                    <div id="exportModal" class="modal"><div class="modal-content max-w-md"><div class="flex justify-between items-center p-6 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-800">Exportar / Imprimir</h2><button class="text-gray-400 hover:text-gray-600 transition closeModalBtn" data-modal="exportModal">&times;</button></div><div class="p-6"><div class="mb-4 flex gap-2"><button id="btnSelectAll" class="text-[10px] font-bold text-brand-600 uppercase hover:underline">Selecionar Todos</button><span class="text-gray-300">|</span><button id="btnDeselectAll" class="text-[10px] font-bold text-gray-400 uppercase hover:underline">Desmarcar Todos</button></div><div class="mb-6 bg-brand-50/50 p-4 rounded-xl border border-brand-100/50"><label class="flex items-center gap-3 cursor-pointer select-none"><div class="relative"><input type="checkbox" id="exportOnlyStock" class="sr-only peer"><div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div></div><span class="text-xs font-bold text-gray-600 uppercase">Apenas itens com estoque</span></label></div><div class="grid grid-cols-2 gap-3 mb-8" id="exportCheckboxes"><label class="flex items-center gap-2 p-3 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 transition"><input type="checkbox" checked class="export-col text-brand-500 rounded focus:ring-brand-500" value="qty"> Estoque</label><label class="flex items-center gap-2 p-3 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 transition"><input type="checkbox" checked class="export-col text-brand-500 rounded focus:ring-brand-500" value="model"> Modelo</label><label class="flex items-center gap-2 p-3 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 transition"><input type="checkbox" checked class="export-col text-brand-500 rounded focus:ring-brand-500" value="brand"> Marca</label><label class="flex items-center gap-2 p-3 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 transition"><input type="checkbox" checked class="export-col text-brand-500 rounded focus:ring-brand-500" value="material"> Material</label><label class="flex items-center gap-2 p-3 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 transition"><input type="checkbox" checked class="export-col text-brand-500 rounded focus:ring-brand-500" value="cost"> Custo</label><label class="flex items-center gap-2 p-3 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 transition"><input type="checkbox" checked class="export-col text-brand-500 rounded focus:ring-brand-500" value="sale"> Venda</label></div><div class="flex gap-3"><button id="btnPrintSheet" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3.5 rounded-xl text-sm transition uppercase">Imprimir</button><button id="btnGenerateXLS" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-emerald-100 transition uppercase">Baixar Excel</button></div></div></div></div>
+
+                    <!-- Forecast Modal -->
+                    <div id="medianModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center p-6 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-800">Inteligência Financeira</h2><button class="text-gray-400 hover:text-gray-600 transition closeModalBtn" data-modal="medianModal">&times;</button></div><div class="p-6"><div class="bg-indigo-50/50 p-5 rounded-2xl mb-6 border border-indigo-100/50"><h3 class="text-xs font-bold text-indigo-500 mb-4 uppercase tracking-wide">Ajuste de Preços em Massa</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="block text-[10px] font-bold text-indigo-400 mb-1 uppercase">Categoria</label>
+                                <select id="bulkCategory" class="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs uppercase focus:border-indigo-500 outline-none text-indigo-900 font-bold"><option value="ALL">TODAS</option><option value="VIDRO">Vidro</option><option value="CERÂMICA">Cerâmica</option><option value="GEL">Gel</option><option value="PRIVACIDADE">Privacidade</option></select>
+                            </div>
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="block text-[10px] font-bold text-indigo-400 mb-1 uppercase">Modelo</label>
+                                <select id="bulkModel" class="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs uppercase focus:border-indigo-500 outline-none text-indigo-900 font-bold"><option value="ALL">TODOS</option></select>
+                            </div>
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="block text-[10px] font-bold text-indigo-400 mb-1 uppercase">Tipo Ajuste</label>
+                                <select id="bulkType" class="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs uppercase focus:border-indigo-500 outline-none text-indigo-900 font-bold"><option value="FIXED">Preço Fixo (R$)</option><option value="PERCENT">Percentual (%)</option></select>
+                            </div>
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-[10px] font-bold text-indigo-400 mb-1 uppercase">Valor</label>
+                                <input type="number" step="0.50" id="bulkPrice" placeholder="0.00" class="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs focus:border-indigo-500 outline-none">
+                            </div>
+                            <div class="col-span-12 md:col-span-1">
+                                <button id="btnBulkUpdate" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-xl uppercase transition shadow-lg shadow-indigo-100 flex items-center justify-center">OK</button>
+                            </div>
+                        </div>
+                    </div><div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"><div class="p-3 bg-gray-50 rounded-xl text-center border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Custo Médio</p><p id="meanCostDisplay" class="text-sm font-bold text-gray-800">R$ 0</p></div><div class="p-3 bg-gray-50 rounded-xl text-center border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mediana Custo</p><p id="medianCostDisplay" class="text-sm font-bold text-gray-800">R$ 0</p></div><div class="p-3 bg-emerald-50/50 rounded-xl text-center border border-emerald-100/50"><p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Venda Média</p><p id="meanSaleDisplay" class="text-sm font-bold text-emerald-800">R$ 0</p></div><div class="p-3 bg-emerald-50/50 rounded-xl text-center border border-emerald-100/50"><p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Mediana Venda</p><p id="medianSaleDisplay" class="text-sm font-bold text-emerald-800">R$ 0</p></div></div><div class="border border-gray-100 rounded-2xl overflow-hidden"><div class="overflow-y-auto max-h-80"><table class="w-full"><thead class="bg-gray-50 sticky top-0 text-[10px] font-bold text-gray-400 uppercase tracking-wider"><tr><th class="px-4 py-3 text-left">Modelo</th><th class="px-2 py-3 text-right">Custo</th><th class="px-2 py-3 text-center">Venda</th><th class="px-2 py-3 text-center">Evol.</th><th class="px-2 py-3 text-right text-indigo-600">Sugerido</th></tr></thead><tbody id="medianListBody" class="text-xs divide-y divide-gray-50"></tbody></table></div></div></div></div></div>
+                `;
+            }
+
+            setupGlobalListeners() {
+                // Nav Buttons
+                const navButtons = document.getElementById('navButtons');
+                navButtons.innerHTML = `
+                    <button class="btn-action" data-action="news"><svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg> Novidades</button>
+                    <button class="btn-action" data-action="compat"><svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> Compatibilidade</button>
+                    <button class="btn-action" data-action="export"><svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Exportar</button>
+                    <button class="btn-action" data-action="shop"><svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg> Operações</button>
+                    <button class="btn-action" data-action="predict"><svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> Previsão</button>
+                `;
+
+                // Table Header
+                const headers = `
+                    <th class="px-4 py-3 text-center w-36"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Estoque</div><input type="number" data-filter="qty" class="input-clean text-center bg-gray-50 h-7" placeholder="#"></th>
+                    <th class="px-4 py-3 text-left min-w-[160px]"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Modelo / Marca</div><input type="text" data-filter="model" class="input-clean bg-gray-50 h-7 uppercase" placeholder="Buscar..."></th>
+                    <th class="px-4 py-3 text-left min-w-[120px]"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Tipo</div><input type="text" data-filter="type" class="input-clean bg-gray-50 h-7 uppercase" placeholder="Buscar..."></th>
+                    <th class="px-4 py-3 text-left hidden md:table-cell"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Material</div><input type="text" data-filter="material" class="input-clean bg-gray-50 h-7 uppercase" placeholder="..."></th>
+                    <th class="px-4 py-3 text-center hidden md:table-cell w-20"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Ano</div><input type="number" data-filter="year" class="input-clean text-center bg-gray-50 h-7" placeholder="#"></th>
+                    <th class="px-4 py-3 text-right w-24"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Custo</div><div class="h-7 flex items-center justify-end text-xs text-gray-300 font-medium select-none">R$</div></th>
+                    <th class="px-4 py-3 text-right w-24"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Venda</div><div class="h-7 flex items-center justify-end text-xs text-gray-300 font-medium select-none">R$</div></th>
+                    <th class="px-4 py-3 text-center w-20"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Saiu</div><input type="number" data-filter="sales" class="input-clean text-center bg-gray-50 h-7" placeholder="#"></th>
+                    <th class="px-4 py-3 text-center hidden md:table-cell w-24"><div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Status</div><select data-filter="status" class="input-clean text-center bg-gray-50 h-7 text-[10px] uppercase p-0"><option value="">Todos</option><option value="PRIORITÁRIO">Prior.</option><option value="NÃO PRIORITÁRIO">Comum</option></select></th>
+                `;
+                document.querySelector('#mainTable thead tr').innerHTML = headers;
+
+                document.querySelectorAll('.closeModalBtn').forEach(btn => btn.onclick = () => this.closeModal(btn.dataset.modal));
+            }
+
+            openModal(id) {
+                const modal = document.getElementById(id);
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                setTimeout(() => modal.classList.add('show'), 10);
+            }
+
+            closeModal(id) {
+                const modal = document.getElementById(id);
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 200);
+            }
+
+            renderInventory(data) {
+                const tbody = document.getElementById('inventoryTableBody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="p-12 text-center"><div class="text-gray-300 text-4xl mb-2">&empty;</div><p class="text-gray-400 text-sm">Nenhum registro encontrado</p></td></tr>';
+                    return;
+                }
+                
+                const fragment = document.createDocumentFragment();
+
+                data.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50/80 transition-colors group";
+                    const isPriority = item.isPriority; 
+                    const statusBadge = isPriority 
+                        ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide cursor-pointer hover:bg-emerald-200" data-action="toggle-priority" data-id="'+index+'">Prioritário</span>' 
+                        : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-200" data-action="toggle-priority" data-id="'+index+'">Comum</span>';
+                    
+                    let stockClass = "text-gray-900 bg-gray-100";
+                    if(item.qty <= 1) stockClass = "text-red-600 bg-red-50 ring-1 ring-red-100";
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button class="btn-icon-small hide-mobile" data-action="dec-qty" data-id="${index}">-</button>
+                                <span class="${stockClass} px-2.5 py-1 rounded-lg font-bold text-sm inline-block min-w-[2rem]">${item.qty}</span>
+                                <button class="btn-icon-small hide-mobile" data-action="inc-qty" data-id="${index}">+</button>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4"><div class="text-sm font-bold text-gray-800 uppercase tracking-tight">${item.brand} ${item.model}</div></td>
+                        <td class="px-4 py-4"><div class="text-xs font-semibold text-gray-500 uppercase bg-gray-50 inline-block px-2 py-1 rounded-md border border-gray-100">${item.type}</div></td>
+                        <td class="px-4 py-4 hidden md:table-cell"><span class="text-xs text-gray-400 uppercase font-medium">${item.material}</span></td>
+                        <td class="px-4 py-4 text-center hidden md:table-cell"><span class="text-xs text-gray-400 font-medium">${item.year}</span></td>
+                        <td class="px-4 py-4 text-right cursor-pointer group-hover:bg-gray-100 transition-colors rounded-lg" data-action="edit-cost" data-id="${index}"><span class="text-xs font-medium text-gray-500 hover:text-brand-600 transition-colors">${Utils.formatCurrency(item.cost)}</span></td>
+                        <td class="px-4 py-4 text-right cursor-pointer group-hover:bg-gray-100 transition-colors rounded-lg" data-action="edit-sale" data-id="${index}"><span class="text-xs font-bold text-gray-700 hover:text-brand-600 transition-colors">${Utils.formatCurrency(item.sale)}</span></td>
+                        <td class="px-4 py-4 text-center cursor-pointer group-hover:bg-gray-100 transition-colors rounded-lg" data-action="edit-sales" data-id="${index}"><span class="text-xs font-bold text-gray-400 group-hover:text-gray-600">${item.sales}</span></td>
+                        <td class="px-4 py-4 text-center hidden md:table-cell">${statusBadge}</td>
+                    </tr>
+                `;
+                    fragment.appendChild(tr);
+                });
+                tbody.innerHTML = '';
+                tbody.appendChild(fragment);
+            }
+        }
+
+        // --- CONTROLLER ---
+        class InventoryController {
+            constructor(model, view) {
+                this.model = model;
+                this.view = view;
+                this.filters = {};
+                this.shoppingCart = [];
+                this.initListeners();
+                this.refreshView();
+            }
+
+            initListeners() {
+                // Filters
+                document.querySelectorAll('[data-filter]').forEach(input => {
+                    input.addEventListener('keyup', () => this.handleFilterChange(input));
+                    input.addEventListener('change', () => this.handleFilterChange(input));
+                });
+
+                // Global Clicks
+                document.addEventListener('click', e => {
+                    const btn = e.target.closest('button[data-action]');
+                    if (btn) {
+                        this.handleNavClick(btn.dataset.action, btn.dataset.id);
+                        return; // Stop if handled
+                    }
+
+                    const actionEl = e.target.closest('[data-action]');
+                    if (actionEl) {
+                        const action = actionEl.dataset.action;
+                        const id = actionEl.dataset.id;
+                        
+                        if (action === 'edit-cost') this.promptEdit(id, 'cost');
+                        if (action === 'edit-sale') this.promptEdit(id, 'sale');
+                        if (action === 'edit-sales') this.promptEdit(id, 'sales');
+                        if (action === 'toggle-priority') {
+                            this.model.togglePriority(id);
+                            this.refreshView();
+                            // Also refresh shopping list if modal is open
+                            if(document.getElementById('shoppingModal').classList.contains('show')) {
+                                this.refreshShoppingLists();
+                            }
+                        }
+                    }
+                });
+
+                // Specific Buttons
+                document.getElementById('btnResetSystem').onclick = () => this.view.openModal('resetModal');
+                document.getElementById('togglePwdBtn').onclick = () => {
+                    const pwd = document.getElementById('resetPassword');
+                    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+                };
+                document.getElementById('confirmResetBtn').onclick = () => this.handleReset();
+
+                document.getElementById('newItemToggle').onclick = () => this.toggleNewItemMode();
+                document.getElementById('btnBuy').onclick = () => this.handleTransaction(1);
+                document.getElementById('btnSell').onclick = () => this.handleTransaction(-1);
+                document.getElementById('btnProcessBatch').onclick = () => this.processBatchUpload();
+                document.getElementById('btnGenerateXLS').onclick = () => this.generateXLS();
+                document.getElementById('btnPrintSheet').onclick = () => window.print();
+                
+                // Select All / Deselect All
+                document.getElementById('btnSelectAll').onclick = () => {
+                    document.querySelectorAll('.export-col').forEach(c => c.checked = true);
+                };
+                document.getElementById('btnDeselectAll').onclick = () => {
+                    document.querySelectorAll('.export-col').forEach(c => c.checked = false);
+                };
+
+                document.getElementById('btnCompatSearch').onclick = () => this.checkCompatibility();
+                document.getElementById('btnBulkUpdate').onclick = () => this.handleBulkUpdate();
+            }
+
+            refreshView() {
+                const filtered = this.getFilteredData();
+                this.view.renderInventory(filtered);
+                this.populateManualSelect();
+            }
+
+            getFilteredData() {
+                return this.model.data.filter(item => {
+                    const matchQty = !this.filters.qty || item.qty <= this.filters.qty;
+                    const matchModel = !this.filters.model || (item.model + ' ' + item.brand).toUpperCase().includes(this.filters.model.toUpperCase());
+                    const matchType = !this.filters.type || item.type.toUpperCase().includes(this.filters.type.toUpperCase());
+                    const matchMaterial = !this.filters.material || item.material.toUpperCase().includes(this.filters.material.toUpperCase());
+                    const matchYear = !this.filters.year || item.year.toString().includes(this.filters.year);
+                    const matchSales = !this.filters.sales || item.sales >= this.filters.sales;
+                    
+                    let matchStatus = true;
+                    if (this.filters.status === 'PRIORITÁRIO') matchStatus = item.isPriority === true;
+                    if (this.filters.status === 'NÃO PRIORITÁRIO') matchStatus = item.isPriority === false;
+
+                    return matchQty && matchModel && matchType && matchMaterial && matchYear && matchSales && matchStatus;
+                });
+            }
+
+            handleFilterChange(input) {
+                this.filters[input.dataset.filter] = input.value;
+                clearTimeout(this.debounceTimer);
+                this.debounceTimer = setTimeout(() => this.refreshView(), 300);
+            }
+
+            handleNavClick(action, id) {
+                switch(action) {
+                    case 'news': this.view.openModal('newsModal'); this.simulateNewsSearch(); break;
+                    case 'compat': this.view.openModal('compatModal'); break;
+                    case 'export': this.view.openModal('exportModal'); break;
+                    case 'shop': 
+                        this.performOldDeviceCheck();
+                        this.view.openModal('shoppingModal'); 
+                        break;
+                    case 'predict': 
+                        this.populateBulkModelSelect();
+                        this.calculatePredictions(); 
+                        this.view.openModal('medianModal'); 
+                        break;
+                    case 'inc-qty': this.quickUpdateQty(id, 1); break;
+                    case 'dec-qty': this.quickUpdateQty(id, -1); break;
+                    case 'move-down': this.manualTogglePriority(id, false); break;
+                    case 'move-up': this.manualTogglePriority(id, true); break;
+                }
+            }
+            
+            performOldDeviceCheck() {
+                const msg = document.getElementById('legacySyncMsg');
+                if(msg) msg.classList.remove('hidden');
+                
+                // Simulate Async Check
+                setTimeout(() => {
+                    const changes = this.model.checkOldDevicesAndDemote();
+                    if(msg) msg.classList.add('hidden');
+                    if(changes > 0) {
+                        this.refreshShoppingLists();
+                        this.refreshView();
+                    } else {
+                        this.refreshShoppingLists();
+                    }
+                }, 800);
+            }
+
+            manualTogglePriority(index, setPriority) {
+               if(this.model.data[index]) {
+                   this.model.data[index].isPriority = setPriority;
+                   this.model.data[index].customPriority = setPriority; // Manual override
+                   this.model.save();
+                   this.refreshShoppingLists();
+                   this.refreshView();
+               }
+            }
+
+            // --- LOGIC ---
+            
+            quickUpdateQty(index, change) {
+                if (this.model.data[index]) {
+                    const newQty = Math.max(0, this.model.data[index].qty + change);
+                    this.model.updateItem(index, { qty: newQty });
+                    this.refreshView();
+                }
+            }
+
+            populateManualSelect() {
+                const sel = document.getElementById('manualItemSelect');
+                sel.innerHTML = '';
+                const sorted = [...this.model.data].sort((a, b) => a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
+                sorted.forEach(item => {
+                    const idx = this.model.data.indexOf(item);
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    opt.textContent = `${item.brand} - ${item.model} (${item.material})`;
+                    sel.appendChild(opt);
+                });
+            }
+
+            populateBulkModelSelect() {
+                const sel = document.getElementById('bulkModel');
+                sel.innerHTML = '<option value="ALL">TODOS</option>';
+                // Get unique models
+                const uniqueModels = [...new Set(this.model.data.map(item => item.model))].sort();
+                
+                uniqueModels.forEach(model => {
+                    const opt = document.createElement('option');
+                    opt.value = model;
+                    opt.textContent = model;
+                    sel.appendChild(opt);
+                });
+            }
+
+            toggleNewItemMode() {
+                const isNew = document.getElementById('newItemToggle').checked;
+                document.getElementById('existingItemArea').classList.toggle('hidden', isNew);
+                document.getElementById('newItemArea').classList.toggle('hidden', !isNew);
+                document.getElementById('newItemArea').classList.toggle('grid', isNew);
+            }
+
+            handleTransaction(direction) {
+                const isNew = document.getElementById('newItemToggle').checked;
+                const qtyInput = document.getElementById('manualQty').value;
+                const qty = parseInt(qtyInput);
+                if (isNaN(qty) || qty < 0) { DialogSystem.alert("QUANTIDADE INVÁLIDA"); return; }
+                
+                if (isNew) {
+                    const type = document.getElementById('newType').value.trim().toUpperCase();
+                    const brand = document.getElementById('newBrand').value.trim().toUpperCase();
+                    const model = document.getElementById('newModel').value.trim().toUpperCase();
+                    const material = document.getElementById('newMaterial').value;
+                    const year = parseInt(document.getElementById('newYear').value) || 2026;
+                    let cost = parseFloat(document.getElementById('newCost').value);
+                    if (isNaN(cost)) cost = 2.00;
+
+                    if (!type || !brand || !model) { DialogSystem.alert("PREENCHA OS CAMPOS OBRIGATÓRIOS"); return; }
+
+                    const newItem = { type, brand, model, material, qty: direction > 0 ? qty : 0, cost, sale: material === 'CERÂMICA' ? 35.00 : 30.00, year };
+                    try {
+                        this.model.addItem(newItem);
+                        DialogSystem.alert("PRODUTO CADASTRADO!");
+                        this.toggleNewItemMode();
+                        document.getElementById('newItemToggle').checked = false;
+                    } catch (e) { DialogSystem.alert(e.message); }
+                } else {
+                    const idx = document.getElementById('manualItemSelect').value;
+                    if (idx === "") return;
+                    const item = this.model.data[idx];
+                    if (direction > 0) {
+                        this.model.updateItem(idx, { qty: item.qty + qty });
+                        DialogSystem.alert("COMPRA REGISTRADA!");
+                    } else {
+                        this.model.updateItem(idx, { qty: Math.max(0, item.qty - qty), sales: item.sales + qty });
+                        DialogSystem.alert("VENDA REGISTRADA!");
+                    }
+                }
+                this.refreshView();
+                this.refreshShoppingLists();
+            }
+
+            processBatchUpload() {
+                const fileInput = document.getElementById('batchFileUpload');
+                const file = fileInput.files[0];
+                if (!file) return DialogSystem.alert("SELECIONE UM ARQUIVO");
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const lines = e.target.result.split(/\r\n|\n/);
+                    
+                    // FASE 1: VALIDAÇÃO PRÉVIA (Simulação)
+                    // Nenhuma alteração é feita no banco de dados aqui.
+                    const operations = []; // Armazena as operações válidas para executar depois
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue; // Pula linhas vazias
+
+                        const parts = line.split(',');
+                        const lineNumber = i + 1;
+
+                        // Validação 1: Colunas
+                        if (parts.length < 5) {
+                            DialogSystem.alert(`ERRO CRÍTICO NA LINHA ${lineNumber}:\n\nFormato inválido ou colunas insuficientes.\nConteúdo: "${line}"\n\nA importação foi CANCELADA. Nenhuma alteração foi feita.\nPor favor, corrija o arquivo e tente novamente.`);
+                            fileInput.value = '';
+                            return; // Aborta tudo
+                        }
+
+                        const [type, model, brand, material, qtyStr] = parts.map(s => s.trim().toUpperCase());
+                        const qty = parseInt(qtyStr);
+
+                        // Validação 2: Tipos de Dados
+                        if (isNaN(qty)) {
+                            DialogSystem.alert(`ERRO CRÍTICO NA LINHA ${lineNumber}:\n\nQuantidade inválida ("${qtyStr}").\nConteúdo: "${line}"\n\nA importação foi CANCELADA. Nenhuma alteração foi feita.\nPor favor, corrija o arquivo e tente novamente.`);
+                            fileInput.value = '';
+                            return; // Aborta tudo
+                        }
+
+                        // Se passou, guarda a operação para executar no lote final
+                        operations.push({ type, model, brand, material, qty });
+                    }
+
+                    // FASE 2: EXECUÇÃO (Só chega aqui se não houve erros)
+                    let added = 0, updated = 0;
+                    
+                    operations.forEach(op => {
+                        const existingIdx = this.model.data.findIndex(i => 
+                            i.model === op.model && 
+                            i.brand === op.brand && 
+                            i.type === op.type && 
+                            i.material === op.material
+                        );
+
+                        if (existingIdx !== -1) {
+                            const current = this.model.data[existingIdx];
+                            this.model.updateItem(existingIdx, { qty: current.qty + op.qty });
+                            updated++;
+                        } else {
+                            const isCeramic = op.material.includes("CERÂMICA");
+                            this.model.addItem({
+                                type: op.type,
+                                model: op.model,
+                                brand: op.brand,
+                                material: op.material,
+                                qty: op.qty,
+                                year: 2026, 
+                                cost: 2.00, 
+                                sale: isCeramic ? 35.00 : 30.00
+                            });
+                            added++;
+                        }
+                    });
+
+                    DialogSystem.alert(`SUCESSO!\n\nO arquivo estava perfeito.\n\nNovos itens: ${added}\nItens atualizados: ${updated}`);
+                    this.refreshView();
+                    this.refreshShoppingLists();
+                    fileInput.value = '';
+                };
+                reader.readAsText(file);
+            }
+
+            refreshShoppingLists() {
+                const cartList = document.getElementById('shoppingListCart');
+                const manualList = document.getElementById('shoppingListManual');
+                cartList.innerHTML = '';
+                manualList.innerHTML = '';
+                
+                const lowStock = this.model.data.map((item, idx) => ({ ...item, originalIdx: idx })).filter(item => item.qty <= 1);
+                
+                // FILTER PRIORITY REPLENISHMENT HERE FOR THE LINK
+                // We use the same criteria as the table "Reposição Prioritária"
+                // which is: item.isPriority && item.qty <= 1
+                const priorityReplenishment = this.model.data.filter(item => item.qty <= 1 && item.isPriority);
+
+                let cartEmpty = true;
+                lowStock.forEach(item => {
+                    const rowBase = `<td class="py-2"><div class="font-bold text-gray-800 uppercase">${item.model}</div><div class="text-[10px] text-gray-400">${item.brand}</div></td><td class="py-2 text-center text-red-600 font-bold bg-red-50 rounded-lg">${item.qty}</td><td class="py-2 text-center text-xs text-brand-500 font-bold uppercase tracking-wide">Repor</td>`;
+                    
+                    if (item.isPriority) { 
+                        cartList.innerHTML += `<tr>${rowBase}<td class="py-2 text-center"><button class="btn-move btn-move-down" data-action="move-down" data-id="${item.originalIdx}">⬇️</button></td></tr>`;
+                        cartEmpty = false; 
+                    } else { 
+                        manualList.innerHTML += `<tr>${rowBase}<td class="py-2 text-center"><button class="btn-move btn-move-up" data-action="move-up" data-id="${item.originalIdx}">⬆️</button></td></tr>`;
+                    }
+                });
+
+                document.getElementById('emptyCartMsg').style.display = cartEmpty ? 'block' : 'none';
+                document.getElementById('unifiedActionArea').style.display = 'block'; 
+                document.getElementById('emptyManualMsg').style.display = manualList.innerHTML === '' ? 'block' : 'none';
+                
+                const link = document.getElementById('unifiedCalendarLink');
+                const title = "REPOSIÇÃO ESTOQUE - LISTA PRIORITÁRIA";
+                let description = "ITENS PARA REPOSIÇÃO PRIORITÁRIA:\n\n";
+                // Use the filtered list for the calendar link
+                priorityReplenishment.forEach(i => description += `[${i.qty}] ${i.brand} ${i.model} (${i.type})\n`);
+                link.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(description)}`;
+            }
+
+            calculatePredictions() {
+                const tbody = document.getElementById('medianListBody');
+                tbody.innerHTML = '';
+                let totalCost = 0, totalSale = 0;
+                this.model.data.forEach(item => {
+                    totalCost += item.cost;
+                    totalSale += item.sale;
+                    const suggested = Math.max(item.cost * 2, item.sale);
+                    const lastHistory = item.priceHistory.length > 1 ? item.priceHistory[item.priceHistory.length - 2] : item.priceHistory[0];
+                    const diff = item.sale - lastHistory.price;
+                    let evol = `<span class="text-gray-300">-</span>`;
+                    if (diff > 0) evol = `<span class="text-emerald-500 font-bold">▲</span>`;
+                    if (diff < 0) evol = `<span class="text-red-500 font-bold">▼</span>`;
+                    tbody.innerHTML += `<tr><td class="px-4 py-2 font-bold text-gray-700 uppercase">${item.model}</td><td class="px-2 py-2 text-right text-gray-500">R$ ${item.cost.toFixed(2)}</td><td class="px-2 py-2 text-center text-gray-500">R$ ${item.sale.toFixed(2)}</td><td class="px-2 py-2 text-center font-bold text-gray-400">${evol}</td><td class="px-2 py-2 text-right font-bold text-indigo-600">R$ ${suggested.toFixed(2)}</td></tr>`;
+                });
+                const count = this.model.data.length || 1;
+                document.getElementById('meanCostDisplay').innerText = `R$ ${(totalCost/count).toFixed(2)}`;
+                document.getElementById('meanSaleDisplay').innerText = `R$ ${(totalSale/count).toFixed(2)}`;
+            }
+
+            handleBulkUpdate() {
+                const cat = document.getElementById('bulkCategory').value;
+                const model = document.getElementById('bulkModel').value; // Get selected model
+                const type = document.getElementById('bulkType').value;
+                const price = parseFloat(document.getElementById('bulkPrice').value);
+                
+                if (isNaN(price)) return DialogSystem.alert("Digite um valor válido.");
+
+                let count = 0;
+                this.model.data.forEach((item, idx) => {
+                    // Check Category AND Model
+                    const matchCategory = (cat === 'ALL' || item.material === cat);
+                    const matchModel = (model === 'ALL' || item.model === model);
+
+                    if (matchCategory && matchModel) {
+                        let newPrice = 0;
+                        if (type === 'FIXED') {
+                            newPrice = price;
+                        } else if (type === 'PERCENT') {
+                            // price is percentage (e.g., 10 for 10%)
+                            newPrice = item.sale * (1 + (price / 100));
+                        }
+                        
+                        // Round to 2 decimals
+                        newPrice = Math.round(newPrice * 100) / 100;
+                        
+                        this.model.updateItem(idx, { sale: newPrice });
+                        count++;
+                    }
+                });
+                
+                DialogSystem.alert(`${count} ITENS ATUALIZADOS.`);
+                this.calculatePredictions();
+                this.refreshView();
+            }
+
+            generateXLS() {
+                const onlyStock = document.getElementById('exportOnlyStock').checked;
+                let data = this.getFilteredData();
+                if (onlyStock) data = data.filter(i => i.qty > 0);
+                data.sort((a, b) => b.qty - a.qty);
+                let csv = "\uFEFFTIPO\tMODELO\tMARCA\tMATERIAL\tANO\tCUSTO\tVENDA\tESTOQUE\tPRIORIDADE\n";
+                data.forEach(i => csv += `${i.type}\t${i.model}\t${i.brand}\t${i.material}\t${i.year}\t${Utils.formatCurrency(i.cost)}\t${Utils.formatCurrency(i.sale)}\t${i.qty}\t${i.isPriority ? 'SIM' : 'NÃO'}\n`);
+                const blob = new Blob([csv], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Estoque_${new Date().toISOString().slice(0,10)}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                this.view.closeModal('exportModal');
+            }
+
+            async handleReset() {
+                const pwd = document.getElementById('resetPassword').value;
+                const hash = await Utils.sha256(pwd);
+                const targetHash = await Utils.sha256("Galantepenachio2023*");
+                if (hash === targetHash) {
+                    DialogSystem.confirm("TEM CERTEZA ABSOLUTA?", (confirmed) => {
+                        if (confirmed) { this.model.reset(); window.location.reload(); }
+                    });
+                } else { DialogSystem.alert("SENHA INCORRETA"); }
+            }
+            
+            simulateNewsSearch() {
+                const resultsDiv = document.getElementById('newsResults');
+                const loading = document.getElementById('newsLoading');
+                loading.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                    resultsDiv.classList.remove('hidden');
+                    // MOCK REFINADO COM BASE EM CONTEXTO 2026 E PEDIDO DO USUÁRIO
+                    const mockNews = [
+                        { brand: "APPLE", model: "IPHONE 17", year: 2026, desc: "Tela 120Hz Base" },
+                        { brand: "APPLE", model: "IPHONE 17 PRO MAX", year: 2026, desc: "Novo Chip A20 Pro" },
+                        { brand: "APPLE", model: "IPHONE 17 AIR", year: 2026, desc: "Design Ultra Fino" },
+                        { brand: "SAMSUNG", model: "GALAXY S26 ULTRA", year: 2026, desc: "Câmera 300MP" },
+                        { brand: "SAMSUNG", model: "GALAXY S26+", year: 2026, desc: "Snapdragon 8 Gen 5" },
+                        { brand: "MOTOROLA", model: "EDGE 70 PRO", year: 2026, desc: "Carregamento 200W" }
+                    ];
+                    let html = '';
+                    mockNews.forEach(news => {
+                        const exists = this.model.data.some(i => i.model === news.model && i.brand === news.brand);
+                        if (!exists) {
+                            html += `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2"><div><p class="font-bold text-sm text-gray-800 uppercase">${news.brand} ${news.model}</p><p class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">${news.desc} - Lançamento ${news.year}</p></div><button class="bg-gray-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-black transition uppercase add-news-btn" data-brand="${news.brand}" data-model="${news.model}">Adicionar</button></div>`;
+                        }
+                    });
+                    resultsDiv.innerHTML = html || '<p class="text-center text-sm text-gray-400 py-4">Tudo atualizado.</p>';
+                    document.querySelectorAll('.add-news-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            this.view.closeModal('newsModal');
+                            this.view.openModal('shoppingModal');
+                            document.getElementById('newItemToggle').click();
+                            document.getElementById('newBrand').value = btn.dataset.brand;
+                            document.getElementById('newModel').value = btn.dataset.model;
+                            document.getElementById('newType').value = '3D COMUM';
+                        };
+                    });
+                }, 1000);
+            }
+
+            checkCompatibility() {
+                const val = document.getElementById('compatInput').value.toUpperCase();
+                const res = document.getElementById('compatResult');
+                res.classList.remove('hidden');
+                res.innerHTML = ''; // Limpar anterior
+
+                // 1. BUSCA NA BASE INTERNA (PLANILHA MESTRA)
+                let internalMatches = [];
+                
+                // Procurar se 'val' é uma BASE
+                const baseMatch = COMPATIBILITY_DB.find(c => c.base.toUpperCase().includes(val));
+                if (baseMatch) {
+                    internalMatches.push({
+                        title: `BASE: ${baseMatch.base}`,
+                        desc: `Compatível com: ${baseMatch.compatible.join(', ')}`,
+                        notes: baseMatch.notes
+                    });
+                }
+
+                // Procurar se 'val' é um COMPATÍVEL
+                const compMatch = COMPATIBILITY_DB.filter(c => c.compatible.some(model => model.toUpperCase().includes(val)));
+                if (compMatch.length > 0) {
+                    compMatch.forEach(m => {
+                        internalMatches.push({
+                            title: `USE: ${m.base}`,
+                            desc: `(Compatibilidade Inversa Encontrada)`,
+                            notes: m.notes
+                        });
+                    });
+                }
+
+                // 2. BUSCA NA WEB (SIMULADA - DATASET DE APOIO)
+                let webMatch = null;
+                // Lógica de fallback antiga para casos não cobertos
+                if (val.includes("IPHONE 13") || val.includes("IPHONE 14")) webMatch = "IPHONE 13 / 13 PRO / 14";
+                else if (val.includes("IPHONE 12") || val.includes("12 PRO")) webMatch = "IPHONE 12 / 12 PRO";
+                else if (val.includes("A54") || val.includes("M54")) webMatch = "SAMSUNG A54 / M54 5G"; // Reforço Web
+                else if (val.includes("S23") || val.includes("S24")) webMatch = "S23 / S24 (BASE)";
+                else if (val.includes("A14")) webMatch = "A14 4G / A14 5G";
+
+                // RENDERIZAR RESULTADOS
+                let html = '';
+
+                if (internalMatches.length > 0) {
+                    html += `<div class="mb-4"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Resultados da Planilha Mestra</p>`;
+                    internalMatches.forEach(m => {
+                        html += `<div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-2 shadow-sm">
+                                    <p class="text-sm font-bold text-emerald-800 uppercase">${m.title}</p>
+                                    <p class="text-xs text-emerald-600 mt-1">${m.desc}</p>
+                                    <p class="text-[10px] text-gray-500 mt-2 italic border-t border-emerald-100 pt-2">${m.notes}</p>
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                if (webMatch && internalMatches.length === 0) { // Mostrar Web apenas se não achou na planilha ou como complemento
+                     html += `<div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center shadow-sm">
+                                <p class="text-xs text-indigo-500 font-medium mb-1 uppercase">Sugestão Web</p>
+                                <p class="text-lg font-bold text-indigo-700 uppercase">${webMatch}</p>
+                              </div>`;
+                }
+
+                if (html === '') {
+                    html = `<div class="bg-gray-50 border border-gray-100 rounded-xl p-6 text-center"><p class="text-sm font-bold text-gray-500 uppercase">Sem dados diretos para "${val}". Tente o modelo base ou variantes.</p></div>`;
+                }
+
+                res.innerHTML = html;
+            }
+
+            promptEdit(index, type) {
+                const item = this.model.data[index];
+                if (type === 'cost') DialogSystem.prompt('NOVO CUSTO:', item.cost, (val) => { if (val && !isNaN(val)) { this.model.updateItem(index, { cost: parseFloat(val) }); this.refreshView(); } });
+                else if (type === 'sale') DialogSystem.prompt('NOVA VENDA:', item.sale, (val) => { if (val && !isNaN(val)) { this.model.updateItem(index, { sale: parseFloat(val) }); this.refreshView(); } });
+                else if (type === 'sales') DialogSystem.prompt('VENDAS TOTAIS:', item.sales, (val) => { if (val && !isNaN(val)) { this.model.updateItem(index, { sales: parseInt(val) }); this.refreshView(); } });
+            }
+        }
+
+        // --- BOOTSTRAP ---
+        const appModel = new InventoryModel();
+        const appView = new View();
+        const appController = new InventoryController(appModel, appView);
+
+    </script>
+</body>
+</html>
