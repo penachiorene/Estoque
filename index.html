@@ -365,36 +365,14 @@
             }
 
             init() {
-                // RESTORED FULL DATASET
-                const restoredData = [
-                    { type: "3D PRIVACIDADE", model: "IP 14 PRO MAX", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 8, cost: 2.00, sale: 30.00 },
-                    { type: "3D PRIVACIDADE", model: "IP 14", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 6, cost: 2.00, sale: 30.00 },
-                    { type: "3D PRIVACIDADE", model: "IP 13 MINI", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2021, sales: 3, cost: 2.00, sale: 30.00 },
-                    { type: "3D CERÂMICA", model: "IP XS MAX / IP 11 PRO MAX", brand: "IPHONE", material: "CERÂMICA", qty: 2, year: 2019, sales: 2, cost: 2.00, sale: 35.00 },
-                    { type: "3D CERÂMICA", model: "24 PLUS", brand: "SAMSUNG", material: "CERÂMICA", qty: 2, year: 2024, sales: 10, cost: 2.00, sale: 35.00 },
-                    { type: "3D COMUM", model: "A 24 4G", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2023, sales: 7, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "A 10", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "A 31", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2020, sales: 2, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI 14C", brand: "REDMI", material: "VIDRO", qty: 5, year: 2024, sales: 15, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "POCO M3", brand: "REDMI", material: "VIDRO", qty: 5, year: 2020, sales: 4, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI 9T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2021, sales: 3, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI POCO 9 SE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI NOTE 7", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI 8T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 2, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI POCO M5", brand: "REDMI", material: "VIDRO", qty: 1, year: 2022, sales: 5, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI 9 LITE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "ZENFONE ZB 633 MAX M2", brand: "ZENFONE", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "REDMI 14 C", brand: "REDMI", material: "VIDRO", qty: 1, year: 2024, sales: 12, cost: 2.00, sale: 30.00 },
-                    { type: "3D COMUM", model: "MOTO ONE", brand: "MOTOROLA", material: "VIDRO", qty: 1, year: 2018, sales: 0, cost: 2.00, sale: 30.00 }
-                ];
-
+                // MODIFICADO: Removemos a restauração automática de dados padrão.
+                // Se não houver dados no storage (após um reset), inicia com array vazio [].
                 const loaded = StorageService.load();
                 
-                if (loaded && loaded.length >= restoredData.length) {
+                if (loaded) {
                     this.data = this.hydrate(loaded);
                 } else {
-                    this.data = this.hydrate(restoredData);
-                    this.save();
+                    this.data = []; // Inicia vazio se resetado ou primeira vez
                 }
             }
 
@@ -1070,6 +1048,3 @@
     </script>
 </body>
 </html>
-reescreva o código abaixo e reestruture todos as linhas, simplifique a escrita e corrija os erros:
-
-
