@@ -1,833 +1,961 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Sistema Avançado de Gestão de Estoque de Películas">
     <title>Sistema de Gestão de Películas - Rene Penachio</title>
     
-    <!-- Mobile App Capable (iOS & Android) -->
+    <!-- Mobile Config -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#4f46e5">
-    <meta name="apple-mobile-web-app-title" content="Estoque Películas">
+    <meta name="theme-color" content="#fff7ed">
 
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
+        /* --- CORE AESTHETICS --- */
+        :root {
+            --primary-orange: #f97316;
+            --soft-orange: #fff7ed;
+            --glass-border: rgba(255, 255, 255, 0.6);
+        }
+
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #f3f4f6;
-            /* iOS Safe Area handling */
+            background-color: var(--soft-orange); 
+            color: #431407; 
             padding-bottom: env(safe-area-inset-bottom);
             -webkit-tap-highlight-color: transparent;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        .priority-low { background-color: #fee2e2; color: #991b1b; } 
-        .priority-high { background-color: #dcfce7; color: #166534; } 
-        
-        /* Modal Styles */
+
+        /* --- LIQUID GLASS BUTTONS --- */
+        .btn-glass {
+            background-color: #ffedd5; 
+            border: 1px solid #fed7aa; 
+            border-radius: 0px; 
+            color: #9a3412; 
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 0.70rem; 
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1.25rem; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn-glass:hover {
+            background-color: #fed7aa;
+            color: #7c2d12;
+            border-color: #fdba74;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.1);
+        }
+
+        .btn-glass:active {
+            transform: translateY(0px);
+            background-color: #fdba74;
+        }
+
+        /* --- SCROLLBARS --- */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+
+        /* --- MINIMALIST INPUTS --- */
+        .input-minimal {
+            background: #ffffff;
+            border: 1px solid #fed7aa;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 16px; 
+            width: 100%;
+        }
+        .input-minimal:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+
+        /* --- MODAL --- */
         .modal {
             display: none;
             position: fixed;
-            z-index: 50;
+            z-index: 100;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
-            /* Smooth scrolling for mobile */
-            -webkit-overflow-scrolling: touch; 
-            padding-top: 1rem;
-            padding-bottom: 4rem; /* Space for mobile keyboard */
+            overflow-y: auto;
+            background-color: rgba(255, 247, 237, 0.9);
+            backdrop-filter: blur(4px);
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal.show {
+            opacity: 1;
         }
         .modal-content {
-            background-color: #fff;
-            margin: auto;
+            background-color: #ffffff;
+            margin: 2rem auto;
             padding: 1.5rem;
-            border-radius: 0.75rem;
-            width: 95%;
-            max-width: 1100px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            position: relative;
+            border-radius: 0px; 
+            width: 100%;
+            max-width: 1000px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ffedd5;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
         }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        /* --- UTILS --- */
         .trend-up { color: #dc2626; } 
         .trend-down { color: #16a34a; } 
         .trend-neutral { color: #9ca3af; }
-
-        /* Table Filter Inputs */
-        .filter-input {
-            width: 100%;
-            padding: 0.35rem 0.5rem;
-            font-size: 16px; /* Prevents iOS Zoom on focus */
-            border: 1px solid #e5e7eb;
-            border-radius: 0.375rem;
-            margin-top: 0.25rem;
+        .search-loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #f97316;
+            width: 24px; height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
         }
-        .filter-input:focus {
-            outline: none;
-            border-color: #6366f1;
-            ring: 2px solid #e0e7ff;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Mobile Specific Adjustments */
         @media (max-width: 640px) {
-            th, td {
-                padding: 0.75rem 0.5rem;
+            .btn-glass { 
+                padding: 0.75rem 0.5rem; 
+                font-size: 0.65rem; 
+                flex-grow: 1;
+                width: 48%; 
             }
-            .modal-content {
-                width: 92%;
-                padding: 1rem;
-            }
-        }
-
-        /* Smooth scroll for tables */
-        .overflow-x-auto {
-            -webkit-overflow-scrolling: touch;
+            .modal-content { margin: 1rem auto; width: 100%; }
         }
     </style>
 </head>
-<body class="text-gray-800 select-none md:select-text">
+<body class="antialiased">
 
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-40 pb-safe">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-orange-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="text-center md:text-left">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Gestão de Estoque</h1>
-                <p class="text-xs md:text-sm text-gray-500">Rene Penachio | Atualizado: Jan 2026</p>
+                <h1 class="text-xl font-bold text-orange-950 tracking-tight">GESTÃO DE ESTOQUE</h1>
+                <p class="text-xs text-orange-600/70 font-medium tracking-wide">RENE PENACHIO | 2026</p>
             </div>
-            <div class="flex flex-wrap justify-center gap-2 w-full md:w-auto">
-                 <button onclick="openExportModal()" class="flex-1 md:flex-none bg-gray-800 hover:bg-gray-900 active:bg-gray-700 text-white px-3 py-2.5 rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-2 text-sm touch-manipulation">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span class="hidden sm:inline">Exportar</span> .XLS
-                </button>
-                <button onclick="initShoppingSession()" class="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white px-3 py-2.5 rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-2 text-sm touch-manipulation">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                    Compras (18h)
-                </button>
-                <button onclick="calculateMedianReport()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3 py-2.5 rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-2 text-sm touch-manipulation">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Previsão
-                </button>
+            
+            <div class="flex flex-wrap justify-center gap-2 w-full md:w-auto" id="navButtons">
+                 <!-- Generated by JS -->
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-4 md:py-6 pb-24">
-
-        <!-- Manual Entry Section -->
-        <div class="bg-white rounded-xl p-4 md:p-6 mb-6 border border-gray-200 shadow-sm">
-            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                Controle de Movimentação
-            </h2>
-
-            <div class="mb-4 flex items-center bg-gray-50 p-3 rounded-lg border border-gray-100 touch-manipulation" onclick="document.getElementById('newItemToggle').click()">
-                <input type="checkbox" id="newItemToggle" onchange="toggleNewItemMode(); event.stopPropagation();" class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
-                <label for="newItemToggle" class="ml-3 text-sm text-gray-700 font-medium cursor-pointer select-none">Cadastrar Novo Produto</label>
-            </div>
-
-            <!-- Existing Item Mode -->
-            <div id="existingItemArea" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end mb-4">
-                <div class="md:col-span-12">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Selecione o Item</label>
-                    <!-- Text-base prevents iOS zoom -->
-                    <select id="manualItemSelect" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 text-base border bg-white appearance-none">
-                        <!-- Populated by JS -->
-                    </select>
-                </div>
-            </div>
-
-            <!-- New Item Mode -->
-            <div id="newItemArea" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                 <div class="col-span-1">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Tipo <span class="text-red-500">*</span></label>
-                    <input type="text" id="newType" placeholder="Ex: 3D Comum" class="w-full border-gray-300 rounded-lg shadow-sm text-base p-2 border">
-                 </div>
-                 <div class="col-span-1">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Marca <span class="text-red-500">*</span></label>
-                    <input type="text" id="newBrand" placeholder="Ex: Samsung" class="w-full border-gray-300 rounded-lg shadow-sm text-base p-2 border">
-                 </div>
-                 <div class="col-span-1">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Modelo <span class="text-red-500">*</span></label>
-                    <input type="text" id="newModel" placeholder="Ex: A54" class="w-full border-gray-300 rounded-lg shadow-sm text-base p-2 border">
-                 </div>
-                 <div class="col-span-1">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Material <span class="text-red-500">*</span></label>
-                    <select id="newMaterial" class="w-full border-gray-300 rounded-lg shadow-sm text-base p-2 border bg-white">
-                        <option value="VIDRO">VIDRO</option>
-                        <option value="CERÂMICA">CERÂMICA</option>
-                        <option value="GEL">GEL</option>
-                        <option value="PRIVACIDADE">PRIVACIDADE</option>
-                    </select>
-                 </div>
-                 <div class="col-span-1 md:col-span-2 lg:col-span-1">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Custo (Opcional)</label>
-                    <input type="number" inputmode="decimal" step="0.01" id="newCost" placeholder="Padrão R$ 2,00" class="w-full border-gray-300 rounded-lg shadow-sm text-base p-2 border">
-                 </div>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
-                <div class="col-span-2 md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Qtd.</label>
-                    <!-- inputmode numeric for better mobile keyboard -->
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="manualQty" min="1" value="1" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 text-base border text-center font-bold">
-                </div>
-                <div class="col-span-1 md:col-span-5">
-                    <button onclick="registerEntry()" class="w-full bg-green-600 active:bg-green-800 text-white font-medium py-3 px-2 rounded-lg transition flex flex-col md:flex-row justify-center items-center gap-1 shadow-sm touch-manipulation">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                        <span class="text-xs md:text-base">COMPRAR</span>
-                    </button>
-                </div>
-                <div class="col-span-1 md:col-span-5">
-                    <button onclick="registerExit()" class="w-full bg-red-600 active:bg-red-800 text-white font-medium py-3 px-2 rounded-lg transition flex flex-col md:flex-row justify-center items-center gap-1 shadow-sm touch-manipulation">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                        <span class="text-xs md:text-base">VENDER</span>
-                    </button>
-                </div>
-            </div>
-            <div id="manualFeedback" class="hidden mt-3 p-3 rounded-lg text-sm border font-medium text-center"></div>
-        </div>
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
         
-        <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+        <!-- Table Container -->
+        <div class="bg-white shadow-sm overflow-hidden border border-orange-100">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200" id="mainTable">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-orange-100" id="mainTable">
+                    <thead class="bg-orange-50/50">
                         <tr>
-                            <!-- Sticky first column for stock on mobile if needed, but simple wrap is better -->
-                            <th class="px-3 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider bg-gray-100 border-b-2 border-indigo-200 w-20">
-                                Est.
-                                <input type="number" inputmode="numeric" onkeyup="filterTable()" id="filterQty" class="filter-input text-center" placeholder="#">
-                            </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
-                                Modelo / Marca
-                                <input type="text" onkeyup="filterTable()" id="filterModel" class="filter-input" placeholder="Buscar...">
-                            </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                                Tipo
-                                <input type="text" onkeyup="filterTable()" id="filterType" class="filter-input" placeholder="Buscar...">
-                            </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                                Material
-                                <input type="text" onkeyup="filterTable()" id="filterMaterial" class="filter-input" placeholder="Buscar...">
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                                Ano
-                                <input type="number" inputmode="numeric" onkeyup="filterTable()" id="filterYear" class="filter-input text-center" placeholder="Ano">
-                            </th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                                Custo
-                                <input type="text" disabled class="filter-input bg-gray-100 cursor-not-allowed border-transparent">
-                            </th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                                Venda
-                                <input type="text" disabled class="filter-input bg-gray-100 cursor-not-allowed border-transparent">
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Saiu
-                                <input type="number" inputmode="numeric" onkeyup="filterTable()" id="filterSales" class="filter-input text-center" placeholder="#">
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                                Status
-                                <select onchange="filterTable()" id="filterStatus" class="filter-input text-center">
-                                    <option value="">Todos</option>
-                                    <option value="PRIORITÁRIO">Prioritário</option>
-                                    <option value="NÃO PRIORITÁRIO">Ñ Prior.</option>
-                                </select>
-                            </th>
+                            <!-- Filters injected by JS -->
                         </tr>
                     </thead>
-                    <tbody id="inventoryTable" class="bg-white divide-y divide-gray-200">
+                    <tbody id="inventoryTableBody" class="bg-white divide-y divide-orange-50">
                         <!-- Rows generated by JS -->
                     </tbody>
                 </table>
             </div>
         </div>
-        <p class="mt-4 text-xs text-gray-500 text-center md:text-right px-4 pb-8">* Toque nos valores de preço ou saída para editar.</p>
+        <p class="mt-6 text-xs text-gray-400 text-center uppercase tracking-widest font-medium opacity-60">SISTEMA OTIMIZADO PARA ALTA PERFORMANCE | PERSISTÊNCIA ATIVA</p>
     </main>
 
-    <!-- Modal: Exportar Relatório -->
-    <div id="exportModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="flex justify-between items-center mb-4 border-b pb-4">
-                <h2 class="text-xl font-bold text-gray-900">Exportar Relatório</h2>
-                <button onclick="closeModal('exportModal')" class="text-gray-400 hover:text-gray-600 text-3xl p-2">&times;</button>
-            </div>
-            
-            <p class="text-sm text-gray-500 mb-4">Selecione as colunas para o Excel (.xls).</p>
-
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="qty"> <span class="text-sm font-bold">Estoque</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="type"> <span class="text-sm">Tipo</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="model"> <span class="text-sm">Modelo</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="brand"> <span class="text-sm">Marca</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="material"> <span class="text-sm">Material</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="year"> <span class="text-sm">Ano</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="cost"> <span class="text-sm">Custo</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="sale"> <span class="text-sm">Venda</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="sales"> <span class="text-sm">Saída</span></label>
-                <label class="flex items-center space-x-3 p-2 bg-gray-50 rounded"><input type="checkbox" checked class="export-col w-5 h-5 rounded text-indigo-600" value="status"> <span class="text-sm">Status</span></label>
-            </div>
-
-            <div class="flex flex-col md:flex-row justify-end gap-3">
-                <button onclick="closeModal('exportModal')" class="w-full md:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-medium">Cancelar</button>
-                <button onclick="generateXLS()" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Baixar .XLS
-                </button>
-            </div>
+    <footer class="mt-auto bg-gray-100 border-t border-gray-200 py-6">
+        <div class="max-w-7xl mx-auto px-4 flex justify-center">
+            <button id="btnResetSystem" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-none shadow-sm text-sm uppercase transition active:scale-95 tracking-wider flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                RESETAR SISTEMA (APAGAR TUDO)
+            </button>
         </div>
-    </div>
+    </footer>
 
-    <!-- Modal: Relatório de Compras -->
-    <div id="shoppingModal" class="modal">
-        <div class="modal-content" style="max-width: 900px;">
-            <div class="flex justify-between items-center mb-4 border-b pb-4">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900">Lista de Compras</h2>
-                    <p class="text-sm text-gray-500">Reposição de estoque baixo.</p>
-                </div>
-                <button onclick="closeModal('shoppingModal')" class="text-gray-400 hover:text-gray-600 text-3xl p-2">&times;</button>
-            </div>
-            
-            <h3 class="text-lg font-semibold text-green-800 mb-2 flex items-center gap-2">
-                Itens Selecionados
-            </h3>
-            <div class="overflow-y-auto max-h-80 mb-6 border rounded-lg bg-gray-50">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-1/3">Item</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Est.</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qtd.</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="shoppingListCart" class="bg-white divide-y divide-gray-200"></tbody>
-                </table>
-                <div id="emptyCartMsg" class="p-8 text-center text-sm text-gray-500 hidden flex flex-col items-center">
-                    Lista vazia.
-                </div>
-            </div>
-
-            <div id="unifiedActionArea" class="mb-8 hidden">
-                <a id="unifiedCalendarLink" href="#" target="_blank" class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-4 px-4 rounded-lg flex justify-center items-center gap-2 transition shadow-md touch-manipulation">
-                    AGENDAR NO GOOGLE AGENDA
-                </a>
-                <p class="text-xs text-center text-gray-500 mt-2">Cria uma tarefa com todos os itens.</p>
-            </div>
-
-            <h3 class="text-lg font-semibold text-amber-800 mb-2 flex items-center gap-2 border-t pt-4">
-                Antigos / Não Prioritários
-            </h3>
-            <div class="overflow-y-auto max-h-40 border rounded-lg bg-amber-50">
-                <table class="min-w-full divide-y divide-amber-200">
-                    <thead class="bg-amber-100">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-amber-800 uppercase">Item</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-amber-800 uppercase">Est.</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-amber-800 uppercase">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="shoppingListManual" class="bg-white divide-y divide-gray-200"></tbody>
-                </table>
-                 <div id="emptyManualMsg" class="p-4 text-center text-sm text-gray-500 hidden">Nenhum item antigo em falta.</div>
-            </div>
-
-            <div class="mt-6 flex justify-end">
-                <button onclick="closeModal('shoppingModal')" class="w-full md:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-medium">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Relatório de Mediana e Preços -->
-    <div id="medianModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-900">Previsão Financeira</h2>
-                <button onclick="closeModal('medianModal')" class="text-gray-400 hover:text-gray-600 text-3xl p-2">&times;</button>
-            </div>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <p class="text-xs text-blue-600 font-semibold uppercase">Média Custo</p>
-                    <p id="meanCostDisplay" class="text-lg font-bold text-blue-900">R$ 0,00</p>
-                </div>
-                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <p class="text-xs text-blue-600 font-semibold uppercase">Mediana Custo</p>
-                    <p id="medianCostDisplay" class="text-lg font-bold text-blue-900">R$ 0,00</p>
-                </div>
-                 <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                    <p class="text-xs text-green-600 font-semibold uppercase">Média Venda</p>
-                    <p id="meanSaleDisplay" class="text-lg font-bold text-green-900">R$ 0,00</p>
-                </div>
-                 <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                    <p class="text-xs text-green-600 font-semibold uppercase">Mediana Venda</p>
-                    <p id="medianSaleDisplay" class="text-lg font-bold text-green-900">R$ 0,00</p>
-                </div>
-            </div>
-
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">Análise Detalhada</h3>
-            <p class="text-xs text-gray-500 mb-2">Margem de lucro de 100% sobre o custo (respeitando piso).</p>
-            <div class="overflow-y-auto max-h-96 border rounded-lg">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50 sticky top-0">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modelo</th>
-                            <th class="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase">Custo</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Evol.</th>
-                            <th class="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase">Venda Atual</th>
-                            <th class="px-2 py-3 text-right text-xs font-medium text-indigo-700 uppercase">Sugerido</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="medianListBody" class="bg-white divide-y divide-gray-200"></tbody>
-                </table>
-            </div>
-             <div class="mt-6 flex justify-end">
-                <button onclick="closeModal('medianModal')" class="w-full md:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-medium">Fechar</button>
-            </div>
-        </div>
-    </div>
+    <!-- Modals Container -->
+    <div id="modalsContainer"></div>
 
     <script>
-        // Data Source
-        const inventoryData = [
-            { type: "3D PRIVACIDADE", model: "IP 14 PRO MAX", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D PRIVACIDADE", model: "IP 14", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D PRIVACIDADE", model: "IP 13 MINI", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2021, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D CERÂMICA", model: "IP XS MAX / IP 11 PRO MAX", brand: "IPHONE", material: "CERÂMICA", qty: 2, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 35.00 },
-            { type: "3D CERÂMICA", model: "24 PLUS", brand: "SAMSUNG", material: "CERÂMICA", qty: 2, year: 2024, sales: 0, cost: 2.00, lastCost: 2.00, sale: 35.00 },
-            { type: "3D COMUM", model: "A 24 4G", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2023, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "A 10", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "A 31", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2020, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI 14C", brand: "REDMI", material: "VIDRO", qty: 5, year: 2024, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "POCO M3", brand: "REDMI", material: "VIDRO", qty: 5, year: 2020, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI 9T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2021, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI POCO 9 SE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI NOTE 7", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI 8T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI POCO M5", brand: "REDMI", material: "VIDRO", qty: 1, year: 2022, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI 9 LITE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "ZENFONE ZB 633 MAX M2", brand: "ZENFONE", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "REDMI 14 C", brand: "REDMI", material: "VIDRO", qty: 1, year: 2024, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 },
-            { type: "3D COMUM", model: "MOTO ONE", brand: "MOTOROLA", material: "VIDRO", qty: 1, year: 2018, sales: 0, cost: 2.00, lastCost: 2.00, sale: 30.00 }
-        ];
+        /**
+         * SISTEMA DE GESTÃO DE ESTOQUE - CORE ENGINE
+         * Arquitetura: MVC (Model-View-Controller) simplificado.
+         * Padrões: Singleton para serviços, Event Delegation.
+         */
 
-        // --- INTERNAL DATABASE FOR YEAR "SEARCH" ---
-        const phoneDatabase = {
-            "IPHONE 15": 2023, "IPHONE 15 PRO": 2023, "IPHONE 15 PRO MAX": 2023, "IPHONE 15 PLUS": 2023,
-            "IPHONE 14": 2022, "IPHONE 14 PRO": 2022, "IPHONE 14 PRO MAX": 2022, "IPHONE 14 PLUS": 2022,
-            "IPHONE 13": 2021, "IPHONE 13 MINI": 2021, "IPHONE 13 PRO": 2021, "IPHONE 13 PRO MAX": 2021,
-            "IPHONE 12": 2020, "IPHONE 12 MINI": 2020, "IPHONE 12 PRO": 2020, "IPHONE 12 PRO MAX": 2020,
-            "IPHONE 11": 2019, "IPHONE 11 PRO": 2019, "IPHONE 11 PRO MAX": 2019,
-            "IPHONE X": 2017, "IPHONE XS": 2018, "IPHONE XR": 2018, "IPHONE XS MAX": 2018,
-            "S24": 2024, "S24 PLUS": 2024, "S24 ULTRA": 2024,
-            "S23": 2023, "S23 PLUS": 2023, "S23 ULTRA": 2023, "S23 FE": 2023,
-            "S22": 2022, "S22 PLUS": 2022, "S22 ULTRA": 2022,
-            "S21": 2021, "S21 FE": 2022, "S20": 2020, "S20 FE": 2020,
-            "A55": 2024, "A35": 2024,
-            "A54": 2023, "A34": 2023, "A24": 2023, "A14": 2023, "M54": 2023, "M14": 2023,
-            "A53": 2022, "A33": 2022, "A23": 2022, "A13": 2022, "M53": 2022,
-            "A52": 2021, "A32": 2021, "A22": 2021, "A12": 2020, "A02": 2021,
-            "A51": 2019, "A71": 2019, "A31": 2020, "A21": 2020, "A11": 2020,
-            "A10": 2019, "A20": 2019, "A30": 2019, "A50": 2019, "A70": 2019,
-            "REDMI NOTE 13": 2024, "REDMI NOTE 13 PRO": 2024,
-            "REDMI NOTE 12": 2023, "REDMI NOTE 12 PRO": 2023, "REDMI 12": 2023, "REDMI 12C": 2023,
-            "REDMI NOTE 11": 2022, "REDMI NOTE 11S": 2022, "REDMI 10": 2021, "REDMI 10C": 2022,
-            "REDMI NOTE 10": 2021, "REDMI NOTE 10S": 2021, "REDMI NOTE 10 PRO": 2021,
-            "REDMI NOTE 9": 2020, "REDMI 9": 2020, "REDMI 9T": 2021, "REDMI 9A": 2020, "REDMI 9C": 2020,
-            "REDMI NOTE 8": 2019, "REDMI NOTE 8T": 2019, "REDMI 8": 2019, "REDMI 8A": 2019,
-            "REDMI NOTE 7": 2019, "REDMI 7": 2019,
-            "POCO X6": 2024, "POCO X5": 2023, "POCO F5": 2023,
-            "POCO X4": 2022, "POCO M5": 2022, "POCO M4": 2021,
-            "POCO X3": 2020, "POCO M3": 2020, "POCO F3": 2021,
-            "MOTO G84": 2023, "MOTO G54": 2023, "MOTO G14": 2023,
-            "MOTO G53": 2022, "MOTO G23": 2023, "MOTO G73": 2023,
-            "MOTO G52": 2022, "MOTO G42": 2022, "MOTO G22": 2022,
-            "MOTO G60": 2021, "MOTO G30": 2021, "MOTO G10": 2021,
-            "MOTO G9": 2020, "MOTO G8": 2020, "MOTO ONE": 2018, "MOTO ONE ACTION": 2019
-        };
+        // --- SERVICES ---
 
-        function lookupYear(model, brand) {
-            const cleanModel = model.toUpperCase().replace(/[-\/]/g, ' ').trim();
-            const brandPrefix = brand.toUpperCase() + " ";
-            if (phoneDatabase[cleanModel]) return phoneDatabase[cleanModel];
-            if (phoneDatabase[brandPrefix + cleanModel]) return phoneDatabase[brandPrefix + cleanModel];
-            for (let key in phoneDatabase) {
-                if (cleanModel.includes(key) || key.includes(cleanModel)) {
-                    return phoneDatabase[key];
+        class StorageService {
+            static KEY = 'estoque_pelicias_data_v3'; // Incremented key to force refresh if needed or separate versions
+            
+            static save(data) {
+                try {
+                    localStorage.setItem(this.KEY, JSON.stringify(data));
+                    return true;
+                } catch (e) {
+                    console.error("Storage limit exceeded or error", e);
+                    alert("ERRO CRÍTICO: Não foi possível salvar os dados. Armazenamento cheio?");
+                    return false;
                 }
             }
-            return 2026; 
-        }
 
-        let filteredData = [...inventoryData]; 
-        let sessionApprovals = new Set();
-        let shoppingCart = [];
+            static load() {
+                const data = localStorage.getItem(this.KEY);
+                return data ? JSON.parse(data) : null;
+            }
 
-        function isPriority(item) {
-            if (item.year >= 2021) return true;
-            return false;
-        }
-
-        function populateManualSelect() {
-            const select = document.getElementById('manualItemSelect');
-            select.innerHTML = '';
-            const sortedItems = [...inventoryData].sort((a, b) => {
-                if (a.brand < b.brand) return -1;
-                if (a.brand > b.brand) return 1;
-                return a.model.localeCompare(b.model);
-            });
-            sortedItems.forEach((item, index) => {
-                const originalIndex = inventoryData.indexOf(item);
-                const opt = document.createElement('option');
-                opt.value = originalIndex;
-                opt.text = `${item.brand} - ${item.model} (${item.material})`;
-                select.appendChild(opt);
-            });
-        }
-
-        function toggleNewItemMode() {
-            const isNew = document.getElementById('newItemToggle').checked;
-            const existingArea = document.getElementById('existingItemArea');
-            const newArea = document.getElementById('newItemArea');
-            if (isNew) {
-                existingArea.classList.add('hidden');
-                newArea.classList.remove('hidden');
-                newArea.classList.add('grid');
-            } else {
-                existingArea.classList.remove('hidden');
-                newArea.classList.add('hidden');
-                newArea.classList.remove('grid');
+            static clear() {
+                localStorage.removeItem(this.KEY);
             }
         }
 
-        function createNewItemFromInputs() {
-            const type = document.getElementById('newType').value.trim().toUpperCase();
-            const brand = document.getElementById('newBrand').value.trim().toUpperCase();
-            const model = document.getElementById('newModel').value.trim().toUpperCase();
-            const material = document.getElementById('newMaterial').value;
-            let enteredCost = parseFloat(document.getElementById('newCost').value);
-            
-            if (!type || !brand || !model) {
-                showManualFeedback('⚠️ Preencha os campos obrigatórios (*).', 'error');
-                return null;
+        class Utils {
+            static formatCurrency(value) {
+                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
             }
-            if (isNaN(enteredCost) || enteredCost <= 0) enteredCost = 2.00;
-            const foundYear = lookupYear(model, brand);
-            let baseSale = 30.00;
-            if (material === 'CERÂMICA') baseSale = 35.00;
 
-            const newItem = {
-                type: type, model: model, brand: brand, material: material,
-                qty: 0, year: foundYear, sales: 0,
-                cost: enteredCost, lastCost: enteredCost, sale: baseSale
-            };
-            inventoryData.push(newItem);
-            document.getElementById('newType').value = '';
-            document.getElementById('newBrand').value = '';
-            document.getElementById('newModel').value = '';
-            document.getElementById('newCost').value = '';
-            populateManualSelect(); 
-            return newItem;
-        }
-
-        function registerEntry() {
-            const isNewMode = document.getElementById('newItemToggle').checked;
-            const qty = parseInt(document.getElementById('manualQty').value);
-            if (isNaN(qty) || qty <= 0) {
-                 showManualFeedback('⚠️ Qtd inválida.', 'error');
-                 return;
+            static sanitize(str) {
+                if (typeof str !== 'string') return str;
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
             }
-            let item;
-            if (isNewMode) {
-                item = createNewItemFromInputs();
-                if (!item) return; 
-            } else {
-                const index = document.getElementById('manualItemSelect').value;
-                if (index === "") { showManualFeedback('⚠️ Selecione um item.', 'error'); return; }
-                item = inventoryData[index];
+
+            static async sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             }
-            item.qty += qty;
-            showManualFeedback(`✅ +${qty} ${item.model}. Novo Est.: ${item.qty}`, 'success');
-            filterTable();
         }
 
-        function registerExit() {
-            const isNewMode = document.getElementById('newItemToggle').checked;
-            const qty = parseInt(document.getElementById('manualQty').value);
-            if (isNaN(qty) || qty <= 0) {
-                 showManualFeedback('⚠️ Qtd inválida.', 'error');
-                 return;
+        // --- MODEL ---
+
+        class InventoryModel {
+            constructor() {
+                this.data = [];
+                this.init();
             }
-            let item;
-            if (isNewMode) {
-                item = createNewItemFromInputs();
-                if (!item) return;
-            } else {
-                 const index = document.getElementById('manualItemSelect').value;
-                if (index === "") { showManualFeedback('⚠️ Selecione um item.', 'error'); return; }
-                item = inventoryData[index];
-            }
-            item.qty -= qty;
-            item.sales += qty;
-            showManualFeedback(`✅ -${qty} ${item.model}. Novo Est.: ${item.qty}`, 'success');
-            filterTable();
-        }
 
-        function showManualFeedback(msg, type) {
-            const el = document.getElementById('manualFeedback');
-            el.innerHTML = msg;
-            el.className = `mt-3 p-3 rounded-lg text-sm border block ${type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'}`;
-            setTimeout(() => { el.className = 'hidden mt-3 p-3 rounded-lg text-sm border font-medium text-center'; }, 3000);
-        }
+            init() {
+                // RESTORED FULL DATASET
+                const restoredData = [
+                    { type: "3D PRIVACIDADE", model: "IP 14 PRO MAX", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 8, cost: 2.00, sale: 30.00 },
+                    { type: "3D PRIVACIDADE", model: "IP 14", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2022, sales: 6, cost: 2.00, sale: 30.00 },
+                    { type: "3D PRIVACIDADE", model: "IP 13 MINI", brand: "IPHONE", material: "VIDRO", qty: 1, year: 2021, sales: 3, cost: 2.00, sale: 30.00 },
+                    { type: "3D CERÂMICA", model: "IP XS MAX / IP 11 PRO MAX", brand: "IPHONE", material: "CERÂMICA", qty: 2, year: 2019, sales: 2, cost: 2.00, sale: 35.00 },
+                    { type: "3D CERÂMICA", model: "24 PLUS", brand: "SAMSUNG", material: "CERÂMICA", qty: 2, year: 2024, sales: 10, cost: 2.00, sale: 35.00 },
+                    { type: "3D COMUM", model: "A 24 4G", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2023, sales: 7, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "A 10", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "A 31", brand: "SAMSUNG", material: "VIDRO", qty: 1, year: 2020, sales: 2, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI 14C", brand: "REDMI", material: "VIDRO", qty: 5, year: 2024, sales: 15, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "POCO M3", brand: "REDMI", material: "VIDRO", qty: 5, year: 2020, sales: 4, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI 9T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2021, sales: 3, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI POCO 9 SE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI NOTE 7", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI 8T", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 2, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI POCO M5", brand: "REDMI", material: "VIDRO", qty: 1, year: 2022, sales: 5, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI 9 LITE", brand: "REDMI", material: "VIDRO", qty: 1, year: 2019, sales: 1, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "ZENFONE ZB 633 MAX M2", brand: "ZENFONE", material: "VIDRO", qty: 1, year: 2019, sales: 0, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "REDMI 14 C", brand: "REDMI", material: "VIDRO", qty: 1, year: 2024, sales: 12, cost: 2.00, sale: 30.00 },
+                    { type: "3D COMUM", model: "MOTO ONE", brand: "MOTOROLA", material: "VIDRO", qty: 1, year: 2018, sales: 0, cost: 2.00, sale: 30.00 }
+                ];
 
-        function filterTable() {
-            const fType = document.getElementById('filterType').value.toLowerCase();
-            const fModel = document.getElementById('filterModel').value.toLowerCase();
-            const fMaterial = document.getElementById('filterMaterial') ? document.getElementById('filterMaterial').value.toLowerCase() : '';
-            const fYear = document.getElementById('filterYear') ? document.getElementById('filterYear').value : '';
-            const fQty = document.getElementById('filterQty').value;
-            const fSales = document.getElementById('filterSales').value;
-            const fStatus = document.getElementById('filterStatus').value;
-
-            filteredData = inventoryData.filter(item => {
-                const priority = isPriority(item);
-                const statusText = priority ? 'PRIORITÁRIO' : 'NÃO PRIORITÁRIO';
-                const matchType = item.type.toLowerCase().includes(fType);
-                const matchModel = (item.model + ' ' + item.brand).toLowerCase().includes(fModel);
-                const matchMaterial = fMaterial ? item.material.toLowerCase().includes(fMaterial) : true;
-                const matchYear = fYear ? item.year.toString().includes(fYear) : true;
-                const matchQty = fQty ? item.qty <= parseInt(fQty) : true;
-                const matchSales = fSales ? item.sales >= parseInt(fSales) : true;
-                const matchStatus = fStatus ? statusText === fStatus : true;
-                return matchType && matchModel && matchMaterial && matchYear && matchQty && matchSales && matchStatus;
-            });
-            renderTable();
-        }
-
-        function openExportModal() { document.getElementById('exportModal').style.display = 'block'; }
-
-        function generateXLS() {
-            const checkboxes = document.querySelectorAll('.export-col:checked');
-            const selectedCols = Array.from(checkboxes).map(cb => cb.value);
-            const colMap = { type: 'Tipo', model: 'Modelo', brand: 'Marca', material: 'Material', year: 'Ano', cost: 'Custo', sale: 'Venda', qty: 'Estoque', sales: 'Saída', status: 'Status' };
-            let table = '<table><thead><tr>';
-            selectedCols.forEach(col => { table += `<th>${colMap[col]}</th>`; });
-            table += '</tr></thead><tbody>';
-            filteredData.forEach(item => {
-                table += '<tr>';
-                selectedCols.forEach(col => {
-                    let val = '';
-                    if (col === 'status') val = isPriority(item) ? 'PRIORITÁRIO' : 'NÃO PRIORITÁRIO';
-                    else if (col === 'cost' || col === 'sale') val = item[col].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    else val = item[col];
-                    table += `<td>${val}</td>`;
-                });
-                table += '</tr>';
-            });
-            table += '</tbody></table>';
-            const blob = new Blob(['\ufeff', table], { type: 'application/vnd.ms-excel;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement("a");
-            downloadLink.href = url;
-            downloadLink.download = "Relatorio_Estoque.xls";
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            closeModal('exportModal');
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('inventoryTable');
-            tbody.innerHTML = '';
-            filteredData.forEach((item) => {
-                const originalIndex = inventoryData.indexOf(item);
-                const priority = isPriority(item);
-                const statusClass = priority ? 'priority-high' : 'priority-low';
-                const statusText = priority ? 'PRIORITÁRIO' : 'Ñ PRIORIT.';
+                const loaded = StorageService.load();
                 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-3 py-3 text-sm font-bold text-center ${item.qty <= 1 ? 'text-red-600' : 'text-gray-900'} text-lg">${item.qty}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">
-                        <div class="font-bold">${item.model}</div>
-                        <div class="text-xs text-gray-500">${item.brand}</div>
-                    </td>
-                    <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.type}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">${item.material}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500 text-center hidden md:table-cell">${item.year}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700 text-right cursor-pointer active:text-indigo-600" onclick="editPrice(${originalIndex}, 'cost')">
-                        R$ ${item.cost.toFixed(2)}
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-700 text-right cursor-pointer active:text-indigo-600" onclick="editPrice(${originalIndex}, 'sale')">
-                        R$ ${item.sale.toFixed(2)}
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-500 text-center cursor-pointer active:bg-gray-100" onclick="editSales(${originalIndex})">
-                        ${item.sales}
-                    </td>
-                    <td class="px-4 py-3 text-center hidden md:table-cell">
-                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                            ${statusText}
-                        </span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function editSales(index) {
-            const currentSales = inventoryData[index].sales;
-            const newVal = prompt(`Atualizar vendas:`, currentSales);
-            if (newVal !== null && !isNaN(newVal)) {
-                inventoryData[index].sales = parseInt(newVal);
-                filterTable();
+                if (loaded && loaded.length >= restoredData.length) {
+                    this.data = this.hydrate(loaded);
+                } else {
+                    // Logic: If loaded data is empty or suspiciously small (less than base set), merge/restore
+                    // This ensures restoration if the previous session wiped data
+                    this.data = this.hydrate(restoredData);
+                    this.save();
+                }
             }
-        }
 
-        function editPrice(index, type) {
-            const item = inventoryData[index];
-            const currentVal = type === 'cost' ? item.cost : item.sale;
-            const label = type === 'cost' ? 'Custo' : 'Venda';
-            const newVal = prompt(`Alterar ${label}:`, currentVal);
-            if (newVal !== null && !isNaN(parseFloat(newVal))) {
-                const val = parseFloat(newVal);
-                if (type === 'cost') { item.lastCost = item.cost; item.cost = val; }
-                else { item.sale = val; }
-                filterTable();
+            hydrate(data) {
+                // Ensure types are correct
+                return data.map(item => ({
+                    ...item,
+                    qty: Number(item.qty),
+                    cost: Number(item.cost),
+                    sale: Number(item.sale),
+                    sales: Number(item.sales || 0),
+                    year: Number(item.year),
+                    lastSaleDate: item.lastSaleDate ? new Date(item.lastSaleDate) : new Date(),
+                    priceHistory: Array.isArray(item.priceHistory) && item.priceHistory.length > 0 ? item.priceHistory : [{ date: new Date(), price: Number(item.sale) }]
+                }));
             }
-        }
 
-        function initShoppingSession() {
-            shoppingCart = [];
-            const lowStockItems = inventoryData.filter(item => item.qty <= 1);
-            lowStockItems.forEach(item => {
-                const isItemPriority = isPriority(item);
-                const itemKey = item.model;
-                const isApproved = sessionApprovals.has(itemKey);
-                if (isItemPriority || isApproved) shoppingCart.push({ item: item, buyQty: 5 });
-            });
-            renderShoppingModal();
-            document.getElementById('shoppingModal').style.display = 'block';
-        }
-        
-        function renderShoppingModal() {
-            const cartListBody = document.getElementById('shoppingListCart');
-            const manualListBody = document.getElementById('shoppingListManual');
-            cartListBody.innerHTML = '';
-            manualListBody.innerHTML = '';
-            if (shoppingCart.length === 0) {
-                document.getElementById('emptyCartMsg').style.display = 'flex';
-                document.getElementById('unifiedActionArea').classList.add('hidden');
-            } else {
-                document.getElementById('emptyCartMsg').style.display = 'none';
-                document.getElementById('unifiedActionArea').classList.remove('hidden');
-                shoppingCart.forEach((cartItem, index) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="px-4 py-3 text-sm text-gray-900 font-bold">${cartItem.item.model}</td>
-                        <td class="px-2 py-3 text-center text-sm text-red-600 font-bold">${cartItem.item.qty}</td>
-                        <td class="px-2 py-3 text-center">
-                            <div class="flex items-center justify-center gap-1">
-                                <button onclick="updateCartQty(${index}, -1)" class="w-8 h-8 bg-gray-200 rounded text-lg font-bold">-</button>
-                                <span class="w-8 text-center font-bold">${cartItem.buyQty}</span>
-                                <button onclick="updateCartQty(${index}, 1)" class="w-8 h-8 bg-gray-200 rounded text-lg font-bold">+</button>
-                            </div>
-                        </td>
-                        <td class="px-2 py-3 text-center">
-                            <button onclick="removeFromCart(${index})" class="text-red-500 font-bold text-xl">&times;</button>
-                        </td>
-                    `;
-                    cartListBody.appendChild(tr);
+            save() {
+                StorageService.save(this.data);
+            }
+
+            addItem(item) {
+                // Deduplication logic
+                const exists = this.data.find(i => 
+                    i.model === item.model && 
+                    i.brand === item.brand && 
+                    i.type === item.type && 
+                    i.material === item.material
+                );
+
+                if (exists) {
+                    throw new Error(`PRODUTO JÁ CADASTRADO: ${item.model}`);
+                }
+
+                this.data.push({
+                    ...item,
+                    qty: Number(item.qty),
+                    cost: Number(item.cost),
+                    sale: Number(item.sale),
+                    lastCost: Number(item.cost),
+                    sales: 0,
+                    priceHistory: [{ date: new Date(), price: item.sale }],
+                    lastSaleDate: new Date()
                 });
-                updateUnifiedLink();
+                this.save();
             }
-            const allLowStock = inventoryData.filter(item => item.qty <= 1);
-            const itemsNotInCart = allLowStock.filter(lsItem => !shoppingCart.some(cartItem => cartItem.item === lsItem));
-            if (itemsNotInCart.length === 0) { document.getElementById('emptyManualMsg').style.display = 'block'; }
-            else {
-                 document.getElementById('emptyManualMsg').style.display = 'none';
-                 itemsNotInCart.forEach(item => {
-                     const tr = document.createElement('tr');
-                     tr.innerHTML = `
-                        <td class="px-4 py-3 text-sm text-gray-700">${item.model}</td>
-                        <td class="px-2 py-3 text-center text-sm font-bold text-red-600">${item.qty}</td>
-                        <td class="px-2 py-3 text-center">
-                            <button onclick="addToCartManual('${item.model}')" class="bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded border">Add</button>
-                        </td>
-                     `;
-                     manualListBody.appendChild(tr);
-                 });
+
+            updateItem(index, updates) {
+                if (this.data[index]) {
+                    // History tracking logic
+                    if (updates.sale && updates.sale !== this.data[index].sale) {
+                        this.data[index].priceHistory.push({ date: new Date(), price: updates.sale });
+                    }
+                    if (updates.cost && updates.cost !== this.data[index].cost) {
+                         this.data[index].lastCost = this.data[index].cost;
+                    }
+
+                    Object.assign(this.data[index], updates);
+                    
+                    if (updates.qty !== undefined && updates.qty < this.data[index].qty) {
+                         this.data[index].lastSaleDate = new Date();
+                    }
+                    
+                    this.save();
+                }
+            }
+
+            deleteItem(index) {
+                this.data.splice(index, 1);
+                this.save();
+            }
+
+            reset() {
+                this.data = [];
+                StorageService.clear();
             }
         }
 
-        function updateCartQty(index, delta) {
-            const newQty = shoppingCart[index].buyQty + delta;
-            if (newQty >= 1) { shoppingCart[index].buyQty = newQty; renderShoppingModal(); }
-        }
-        function removeFromCart(index) { shoppingCart.splice(index, 1); renderShoppingModal(); }
-        function addToCartManual(modelName) {
-            const item = inventoryData.find(i => i.model === modelName);
-            if (item) { sessionApprovals.add(modelName); shoppingCart.push({ item: item, buyQty: 5 }); renderShoppingModal(); }
-        }
-        function updateUnifiedLink() {
-            let itemListText = "LISTA DE REPOSIÇÃO:\n\n";
-            shoppingCart.forEach(c => { itemListText += `- ${c.item.model} (${c.item.brand}): ${c.buyQty} un.\n`; });
-            const title = "[Tarefa] - COMPRA DE ESTOQUE: Películas";
-            const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(itemListText)}`;
-            document.getElementById('unifiedCalendarLink').href = calendarUrl;
-        }
+        // --- VIEW ---
 
-        function calculateMean(arr) { if (arr.length === 0) return 0; return arr.reduce((a, b) => a + b, 0) / arr.length; }
-        function calculateMedian(arr) { if (arr.length === 0) return 0; const sorted = [...arr].sort((a, b) => a - b); const mid = Math.floor(sorted.length / 2); return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; }
+        class View {
+            constructor() {
+                this.app = document.getElementById('inventoryTableBody');
+                this.modals = {};
+                this.renderModals();
+                this.setupGlobalListeners();
+            }
 
-        function calculateMedianReport() {
-            const costs = inventoryData.map(i => i.cost);
-            const salesPrices = inventoryData.map(i => i.sale);
-            document.getElementById('meanCostDisplay').innerText = `R$ ${calculateMean(costs).toFixed(2)}`;
-            document.getElementById('medianCostDisplay').innerText = `R$ ${calculateMedian(costs).toFixed(2)}`;
-            document.getElementById('meanSaleDisplay').innerText = `R$ ${calculateMean(salesPrices).toFixed(2)}`;
-            document.getElementById('medianSaleDisplay').innerText = `R$ ${calculateMedian(salesPrices).toFixed(2)}`;
-            const tbody = document.getElementById('medianListBody');
-            tbody.innerHTML = '';
-            inventoryData.forEach(item => {
-                const diff = item.cost - item.lastCost;
-                const percent = item.lastCost > 0 ? (diff / item.lastCost) * 100 : 0;
-                let trendIcon = '➖'; let trendClass = 'trend-neutral'; let trendText = '0%';
-                if (diff > 0) { trendIcon = '▲'; trendClass = 'trend-up'; trendText = `+${percent.toFixed(0)}%`; }
-                else if (diff < 0) { trendIcon = '▼'; trendClass = 'trend-down'; trendText = `${percent.toFixed(0)}%`; }
-                const minMarkupPrice = item.cost * 2; const floorPrice = item.sale;
-                const idealPrice = Math.max(minMarkupPrice, floorPrice);
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-4 py-3 text-sm text-gray-700 font-medium">${item.model}</td>
-                    <td class="px-2 py-3 text-right text-sm text-gray-500">R$ ${item.cost.toFixed(2)}</td>
-                    <td class="px-2 py-3 text-center text-sm font-bold ${trendClass}">${trendIcon} ${trendText}</td>
-                    <td class="px-2 py-3 text-right text-sm text-gray-700">R$ ${item.sale.toFixed(2)}</td>
-                    <td class="px-2 py-3 text-right text-sm font-bold text-indigo-700">R$ ${idealPrice.toFixed(2)}</td>
-                    <td class="px-2 py-3 text-center text-sm text-gray-500">${item.sale >= idealPrice ? 'OK' : 'Baixo'}</td>
+            renderModals() {
+                const container = document.getElementById('modalsContainer');
+                container.innerHTML = `
+                    <!-- Reset Modal -->
+                    <div id="resetModal" class="modal"><div class="modal-content max-w-md border-red-200 shadow-xl"><div class="text-center mb-6"><div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"><svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div><h3 class="text-lg leading-6 font-bold text-red-900 uppercase">ZONA DE PERIGO: RESET TOTAL</h3><p class="text-sm text-gray-500 mt-2 uppercase">ESTA AÇÃO APAGARÁ PERMANENTEMENTE TODOS OS DADOS. NÃO HÁ VOLTA.</p></div><div class="mb-6"><label class="block text-xs font-bold text-gray-700 mb-1 uppercase">DIGITE A SENHA MESTRA:</label><div class="relative"><input type="password" id="resetPassword" class="input-minimal w-full pr-10 border-red-300 focus:border-red-500" placeholder="SENHA..."><button type="button" id="togglePwdBtn" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">👁️</button></div></div><div class="flex gap-3"><button class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 uppercase rounded-none transition closeModalBtn" data-modal="resetModal">CANCELAR</button><button id="confirmResetBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 uppercase rounded-none transition shadow-lg">CONFIRMAR RESET</button></div></div></div>
+
+                    <!-- Shopping / Import Modal -->
+                    <div id="shoppingModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center mb-6 pb-2 border-b border-orange-100"><h2 class="text-lg font-bold text-orange-900 uppercase">COMPRA / VENDA / IMPORTAÇÃO</h2><button class="text-gray-400 hover:text-gray-600 text-2xl closeModalBtn" data-modal="shoppingModal">&times;</button></div><div class="bg-orange-50/50 p-4 mb-6 border border-orange-100 shadow-sm rounded-none"><h3 class="text-xs font-bold text-orange-800 mb-4 flex items-center gap-2 uppercase tracking-wide"><span class="w-2 h-2 bg-orange-500 rounded-full"></span> REGISTRO MANUAL (UNITÁRIO)</h3><div class="mb-4 flex items-center bg-white p-2.5 border border-orange-200 cursor-pointer transition hover:bg-orange-50"><input type="checkbox" id="newItemToggle" class="w-4 h-4 text-orange-600 border-gray-300 rounded-none focus:ring-orange-500 cursor-pointer"><label for="newItemToggle" class="ml-3 text-xs md:text-sm text-gray-700 font-bold cursor-pointer select-none uppercase">CADASTRAR NOVO PRODUTO</label></div><div id="existingItemArea" class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">SELECIONE O ITEM</label><select id="manualItemSelect" class="input-minimal w-full bg-white appearance-none uppercase text-gray-700 rounded-none"></select></div><div id="newItemArea" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 bg-white p-4 border border-orange-200"><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">TIPO</label><input type="text" id="newType" placeholder="EX: 3D COMUM" class="input-minimal w-full uppercase rounded-none"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">MARCA</label><input type="text" id="newBrand" placeholder="EX: SAMSUNG" class="input-minimal w-full uppercase rounded-none"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">MODELO</label><input type="text" id="newModel" placeholder="EX: A54" class="input-minimal w-full uppercase rounded-none"></div><div class="col-span-1"><label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">MATERIAL</label><select id="newMaterial" class="input-minimal w-full bg-white uppercase rounded-none"><option value="VIDRO">VIDRO</option><option value="CERÂMICA">CERÂMICA</option><option value="GEL">GEL</option><option value="PRIVACIDADE">PRIVACIDADE</option></select></div><div class="col-span-1 md:col-span-2 lg:col-span-1"><label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">CUSTO</label><input type="number" inputmode="decimal" step="0.01" id="newCost" placeholder="R$ 2,00" class="input-minimal w-full rounded-none"></div></div><div class="grid grid-cols-4 md:grid-cols-12 gap-3 items-end"><div class="col-span-4 md:col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">QTD.</label><input type="number" id="manualQty" min="0" value="1" class="input-minimal w-full text-center font-bold text-orange-900 rounded-none"></div><div class="col-span-2 md:col-span-5"><button id="btnBuy" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 shadow-sm text-xs md:text-sm uppercase transition active:scale-95 rounded-none">COMPRAR (ENTRADA)</button></div><div class="col-span-2 md:col-span-5"><button id="btnSell" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 shadow-sm text-xs md:text-sm uppercase transition active:scale-95 rounded-none">VENDER (SAÍDA)</button></div></div><div id="manualFeedback" class="hidden mt-4 p-3 text-xs font-bold text-center uppercase border border-dashed"></div></div><div class="bg-white p-4 mb-6 border border-orange-100 shadow-sm"><h3 class="text-xs font-bold text-orange-800 mb-2 uppercase">IMPORTAÇÃO EM LOTE (.TXT)</h3><div class="flex gap-2"><input type="file" id="batchFileUpload" accept=".txt,.csv" class="block w-full text-xs text-gray-500 uppercase"/><button id="btnProcessBatch" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 uppercase rounded-none">PROCESSAR</button></div><div id="uploadFeedback" class="hidden mt-3 p-0"></div></div><h3 class="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">ITENS PENDENTES (CARRINHO AUTOMÁTICO)</h3><div class="overflow-y-auto max-h-64 mb-6 border border-gray-100"><table class="min-w-full divide-y divide-gray-100"><thead class="bg-gray-50 uppercase text-[10px] text-gray-500"><tr><th class="px-4 py-2 text-left w-1/3">ITEM</th><th class="px-2 py-2 text-center">EST.</th><th class="px-2 py-2 text-center w-32">COMPRAR QTD.</th><th class="px-2 py-2 text-center w-16">AÇÃO</th></tr></thead><tbody id="shoppingListCart" class="bg-white divide-y divide-gray-50 text-xs"></tbody></table><div id="emptyCartMsg" class="p-6 text-center text-xs text-gray-400 uppercase font-medium">LISTA VAZIA</div></div><div id="unifiedActionArea" class="hidden mb-6"><a id="unifiedCalendarLink" href="#" target="_blank" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-center text-white font-bold py-3 shadow-sm text-sm uppercase rounded-none">AGENDAR (GOOGLE CALENDAR)</a></div><h3 class="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">NÃO PRIORITÁRIOS / BAIXO ESTOQUE</h3><div class="overflow-y-auto max-h-40 border border-gray-100"><table class="min-w-full divide-y divide-gray-100"><thead class="bg-gray-50 uppercase text-[10px] text-gray-500"><tr><th class="px-4 py-2 text-left">ITEM</th><th class="px-2 py-2 text-center">EST.</th><th class="px-2 py-2 text-center">TEMPO</th><th class="px-2 py-2 text-center">AÇÃO</th></tr></thead><tbody id="shoppingListManual" class="bg-white divide-y divide-gray-50 text-xs"></tbody></table><div id="emptyManualMsg" class="p-4 text-center text-xs text-gray-400 uppercase">NENHUM.</div></div></div></div>
+
+                    <!-- News Modal (Search) -->
+                    <div id="newsModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center mb-6 pb-2 border-b border-orange-100"><h2 class="text-lg font-bold text-orange-900 uppercase">NOVIDADES (WEB)</h2><button class="text-gray-400 hover:text-gray-600 text-2xl closeModalBtn" data-modal="newsModal">&times;</button></div><div id="newsLoading" class="text-center py-10"><div class="search-loader mb-3 mx-auto"></div><p class="text-xs font-bold text-gray-500 uppercase">BUSCANDO LANÇAMENTOS...</p></div><div id="newsResults" class="hidden space-y-2 max-h-96 overflow-y-auto"></div></div></div>
+
+                    <!-- Compatibility Modal -->
+                    <div id="compatModal" class="modal"><div class="modal-content max-w-lg"><div class="flex justify-between items-center mb-6 pb-2 border-b border-orange-100"><h2 class="text-lg font-bold text-orange-900 uppercase">COMPATIBILIDADE</h2><button class="text-gray-400 hover:text-gray-600 text-2xl closeModalBtn" data-modal="compatModal">&times;</button></div><div class="flex gap-2 mb-6"><input type="text" id="compatInput" placeholder="EX: POCO X5..." class="input-minimal w-full uppercase rounded-none"><button id="btnCompatSearch" class="bg-orange-500 text-white font-bold px-6 uppercase text-sm shadow-md rounded-none">BUSCAR</button></div><div id="compatResult" class="hidden"></div></div></div>
+
+                    <!-- Export Modal -->
+                    <div id="exportModal" class="modal"><div class="modal-content max-w-md"><div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold text-orange-900 uppercase">EXPORTAR .XLS</h2><button class="text-gray-400 hover:text-gray-600 text-2xl closeModalBtn" data-modal="exportModal">&times;</button></div><div class="mb-4 bg-orange-50 p-3 border border-orange-100"><label class="flex items-center gap-2 text-xs font-bold text-orange-800 uppercase cursor-pointer select-none"><input type="checkbox" id="exportOnlyStock" class="w-4 h-4 text-orange-600 rounded-none focus:ring-orange-500 border-gray-300"> APENAS COM ESTOQUE (>0)</label><p class="text-[10px] text-gray-500 mt-1 ml-6">SE MARCADO, IGNORA ITENS ZERADOS.</p></div><div class="grid grid-cols-2 gap-3 mb-6"><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="qty"> ESTOQUE</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="type"> TIPO</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="model"> MODELO</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="brand"> MARCA</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="material"> MATERIAL</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="year"> ANO</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="cost"> CUSTO</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="sale"> VENDA</label><label class="flex items-center gap-2 p-2 bg-orange-50 text-xs font-bold text-gray-700 uppercase cursor-pointer"><input type="checkbox" checked class="export-col text-orange-500 rounded-none" value="sales"> SAÍDA</label></div><button id="btnGenerateXLS" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 shadow-sm text-sm uppercase rounded-none">BAIXAR ARQUIVO</button></div></div>
+
+                    <!-- Forecast Modal -->
+                    <div id="medianModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center mb-6 pb-2 border-b border-orange-100"><h2 class="text-lg font-bold text-orange-900 uppercase">PREVISÃO FINANCEIRA</h2><button class="text-gray-400 hover:text-gray-600 text-2xl closeModalBtn" data-modal="medianModal">&times;</button></div><div class="bg-indigo-50/50 p-4 mb-6 border border-indigo-100"><h3 class="text-xs font-bold text-indigo-900 mb-3 uppercase">ATUALIZAÇÃO EM MASSA</h3><div class="grid grid-cols-12 gap-2 items-end"><div class="col-span-5"><select id="bulkCategory" class="input-minimal w-full text-xs uppercase h-9 rounded-none"><option value="VIDRO">VIDRO</option><option value="CERÂMICA">CERÂMICA</option><option value="GEL">GEL</option><option value="PRIVACIDADE">PRIVACIDADE</option></select></div><div class="col-span-4"><input type="number" step="0.50" id="bulkPrice" placeholder="R$" class="input-minimal w-full text-xs h-9 rounded-none"></div><div class="col-span-3"><button id="btnBulkUpdate" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold h-9 uppercase rounded-none">APLICAR</button></div></div><div id="bulkUpdateMsg" class="hidden mt-2 text-[10px] font-bold text-green-600 uppercase"></div></div><div class="grid grid-cols-4 gap-2 mb-6"><div class="bg-blue-50 p-2 border border-blue-100 text-center"><p class="text-[10px] font-bold text-blue-400 uppercase">MÉDIA CUSTO</p><p id="meanCostDisplay" class="text-sm font-bold text-blue-900">R$ 0</p></div><div class="bg-blue-50 p-2 border border-blue-100 text-center"><p class="text-[10px] font-bold text-blue-400 uppercase">MEDIANA CUSTO</p><p id="medianCostDisplay" class="text-sm font-bold text-blue-900">R$ 0</p></div><div class="bg-green-50 p-2 border border-green-100 text-center"><p class="text-[10px] font-bold text-green-400 uppercase">MÉDIA VENDA</p><p id="meanSaleDisplay" class="text-sm font-bold text-green-900">R$ 0</p></div><div class="bg-green-50 p-2 border border-green-100 text-center"><p class="text-[10px] font-bold text-green-400 uppercase">MEDIANA VENDA</p><p id="medianSaleDisplay" class="text-sm font-bold text-green-900">R$ 0</p></div></div><div class="overflow-y-auto max-h-96 border border-gray-100"><table class="min-w-full divide-y divide-gray-100"><thead class="bg-gray-50 sticky top-0 uppercase text-[10px] text-gray-500"><tr><th class="px-4 py-2 text-left">MODELO</th><th class="px-2 py-2 text-right">CUSTO</th><th class="px-2 py-2 text-center">VENDA</th><th class="px-2 py-2 text-center">EVOL.</th><th class="px-2 py-2 text-right text-indigo-600">SUGERIDO</th></tr></thead><tbody id="medianListBody" class="bg-white divide-y divide-gray-50 text-xs"></tbody></table></div></div></div>
                 `;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('medianModal').style.display = 'block';
+            }
+
+            setupGlobalListeners() {
+                // Nav Buttons
+                const navButtons = document.getElementById('navButtons');
+                navButtons.innerHTML = `
+                    <button class="btn-glass" data-action="news"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> NOVIDADES</button>
+                    <button class="btn-glass" data-action="compat"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> COMPATIBILIDADE</button>
+                    <button class="btn-glass" data-action="export"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> EXPORTAR</button>
+                    <button class="btn-glass" data-action="shop"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg> COMPRA / VENDA / IMPORTAÇÃO</button>
+                    <button class="btn-glass" data-action="predict"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> PREVISÃO</button>
+                `;
+
+                // Event Delegation for Table Filters
+                const headers = `
+                    <th class="px-3 py-3 text-center w-20 border-b-2 border-orange-200"><span class="text-[10px] font-bold text-orange-800 uppercase block mb-1">ESTOQUE</span><input type="number" data-filter="qty" class="input-minimal text-center h-8 text-xs p-1 rounded-none" placeholder="#"></th>
+                    <th class="px-4 py-3 text-left min-w-[140px]"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">MODELO / MARCA</span><input type="text" data-filter="model" class="input-minimal h-8 text-xs p-1 uppercase rounded-none" placeholder="BUSCAR..."></th>
+                    <th class="px-4 py-3 text-left min-w-[100px]"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">TIPO</span><input type="text" data-filter="type" class="input-minimal h-8 text-xs p-1 uppercase rounded-none" placeholder="BUSCAR..."></th>
+                    <th class="px-4 py-3 text-left hidden md:table-cell"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">MATERIAL</span><input type="text" data-filter="material" class="input-minimal h-8 text-xs p-1 uppercase rounded-none" placeholder="..."></th>
+                    <th class="px-4 py-3 text-center hidden md:table-cell"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ANO</span><input type="number" data-filter="year" class="input-minimal h-8 text-xs p-1 text-center rounded-none" placeholder="#"></th>
+                    <th class="px-4 py-3 text-right min-w-[90px]"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">CUSTO</span><div class="h-8 flex items-center justify-end text-xs text-gray-300 select-none">R$</div></th>
+                    <th class="px-4 py-3 text-right min-w-[90px]"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">VENDA</span><div class="h-8 flex items-center justify-end text-xs text-gray-300 select-none">R$</div></th>
+                    <th class="px-4 py-3 text-center"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">SAIU</span><input type="number" data-filter="sales" class="input-minimal h-8 text-xs p-1 text-center rounded-none" placeholder="#"></th>
+                    <th class="px-4 py-3 text-center hidden md:table-cell"><span class="text-[10px] font-bold text-gray-500 uppercase block mb-1">STATUS</span><select data-filter="status" class="input-minimal h-8 text-xs p-1 text-center uppercase bg-white rounded-none"><option value="">TODOS</option><option value="PRIORITÁRIO">PRIORITÁRIO</option><option value="NÃO PRIORITÁRIO">Ñ PRIOR.</option></select></th>
+                `;
+                document.querySelector('#mainTable thead tr').innerHTML = headers;
+
+                // Close Buttons
+                document.querySelectorAll('.closeModalBtn').forEach(btn => {
+                    btn.onclick = () => this.closeModal(btn.dataset.modal);
+                });
+            }
+
+            openModal(id) {
+                const modal = document.getElementById(id);
+                modal.style.display = 'block';
+                setTimeout(() => modal.classList.add('show'), 10);
+            }
+
+            closeModal(id) {
+                const modal = document.getElementById(id);
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+
+            renderInventory(data) {
+                const tbody = document.getElementById('inventoryTableBody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-400 text-xs">NENHUM REGISTRO ENCONTRADO</td></tr>';
+                    return;
+                }
+                
+                // Using DocumentFragment for performance
+                const fragment = document.createDocumentFragment();
+
+                data.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-orange-50/30 transition-colors group";
+                    const isPriority = item.year >= 2021;
+                    const statusBadge = isPriority 
+                        ? '<span class="text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-[10px] font-bold uppercase">PRIORITÁRIO</span>' 
+                        : '<span class="text-red-700 bg-red-50 px-2 py-1 rounded text-[10px] font-bold uppercase">Ñ PRIOR.</span>';
+                    
+                    const stockClass = item.qty <= 1 ? 'text-red-600 bg-red-50' : 'text-gray-900 bg-gray-50';
+
+                    tr.innerHTML = `
+                        <td class="px-3 py-3 text-center border-b border-orange-50"><span class="${stockClass} px-2 py-1 rounded-none font-bold text-sm block border border-orange-100">${item.qty}</span></td>
+                        <td class="px-4 py-3 text-sm font-bold text-gray-700 uppercase border-b border-orange-50">${item.brand} ${item.model}</td>
+                        <td class="px-4 py-3 text-xs font-bold text-gray-500 uppercase border-b border-orange-50">${item.type}</td>
+                        <td class="px-4 py-3 text-xs text-gray-400 uppercase hidden md:table-cell border-b border-orange-50">${item.material}</td>
+                        <td class="px-4 py-3 text-xs text-gray-400 text-center hidden md:table-cell border-b border-orange-50">${item.year}</td>
+                        <td class="px-4 py-3 text-xs font-bold text-gray-600 text-right cursor-pointer border-b border-orange-50 hover:text-orange-500" data-action="edit-cost" data-id="${index}">${Utils.formatCurrency(item.cost)}</td>
+                        <td class="px-4 py-3 text-xs font-bold text-gray-600 text-right cursor-pointer border-b border-orange-50 hover:text-orange-500" data-action="edit-sale" data-id="${index}">${Utils.formatCurrency(item.sale)}</td>
+                        <td class="px-4 py-3 text-xs font-bold text-gray-400 text-center cursor-pointer border-b border-orange-50 hover:bg-gray-100 rounded" data-action="edit-sales" data-id="${index}">${item.sales}</td>
+                        <td class="px-4 py-3 text-center hidden md:table-cell border-b border-orange-50">${statusBadge}</td>
+                    </tr>
+                `;
+                    fragment.appendChild(tr);
+                });
+                tbody.innerHTML = '';
+                tbody.appendChild(fragment);
+            }
         }
 
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; }
+        // --- CONTROLLER ---
 
-        filterTable(); populateManualSelect();
+        class InventoryController {
+            constructor(model, view) {
+                this.model = model;
+                this.view = view;
+                this.filters = {};
+                this.shoppingCart = [];
+
+                this.initListeners();
+                this.refreshView();
+            }
+
+            initListeners() {
+                // Table Filters
+                document.querySelectorAll('[data-filter]').forEach(input => {
+                    input.addEventListener('keyup', () => this.handleFilterChange(input));
+                    input.addEventListener('change', () => this.handleFilterChange(input)); // For select
+                });
+
+                // Navigation
+                document.addEventListener('click', e => {
+                    const btn = e.target.closest('button[data-action]');
+                    if (btn) this.handleNavClick(btn.dataset.action);
+                    
+                    // Table Actions
+                    if (e.target.dataset.action === 'edit-cost') this.promptEdit(e.target.dataset.id, 'cost');
+                    if (e.target.dataset.action === 'edit-sale') this.promptEdit(e.target.dataset.id, 'sale');
+                    if (e.target.dataset.action === 'edit-sales') this.promptEdit(e.target.dataset.id, 'sales');
+                });
+
+                // Reset System
+                document.getElementById('btnResetSystem').onclick = () => this.view.openModal('resetModal');
+                document.getElementById('togglePwdBtn').onclick = () => {
+                    const pwd = document.getElementById('resetPassword');
+                    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+                };
+                document.getElementById('confirmResetBtn').onclick = () => this.handleReset();
+
+                // Shopping Logic
+                document.getElementById('newItemToggle').onclick = () => this.toggleNewItemMode();
+                document.getElementById('btnBuy').onclick = () => this.handleTransaction(1);
+                document.getElementById('btnSell').onclick = () => this.handleTransaction(-1);
+                document.getElementById('btnProcessBatch').onclick = () => this.processBatchUpload();
+                
+                // Export
+                document.getElementById('btnGenerateXLS').onclick = () => this.generateXLS();
+
+                // Compatibility
+                document.getElementById('btnCompatSearch').onclick = () => this.checkCompatibility();
+
+                // Bulk Update
+                document.getElementById('btnBulkUpdate').onclick = () => this.handleBulkUpdate();
+            }
+
+            refreshView() {
+                const filtered = this.getFilteredData();
+                this.view.renderInventory(filtered);
+                this.populateManualSelect();
+            }
+
+            getFilteredData() {
+                return this.model.data.filter(item => {
+                    const matchQty = !this.filters.qty || item.qty <= this.filters.qty;
+                    const matchModel = !this.filters.model || (item.model + ' ' + item.brand).toUpperCase().includes(this.filters.model.toUpperCase());
+                    const matchType = !this.filters.type || item.type.toUpperCase().includes(this.filters.type.toUpperCase());
+                    const matchMaterial = !this.filters.material || item.material.toUpperCase().includes(this.filters.material.toUpperCase());
+                    const matchYear = !this.filters.year || item.year.toString().includes(this.filters.year);
+                    const matchSales = !this.filters.sales || item.sales >= this.filters.sales;
+                    
+                    let matchStatus = true;
+                    if (this.filters.status === 'PRIORITÁRIO') matchStatus = item.year >= 2021;
+                    if (this.filters.status === 'NÃO PRIORITÁRIO') matchStatus = item.year < 2021;
+
+                    return matchQty && matchModel && matchType && matchMaterial && matchYear && matchSales && matchStatus;
+                });
+            }
+
+            handleFilterChange(input) {
+                const key = input.dataset.filter;
+                this.filters[key] = input.value;
+                // Debounce simple implementation
+                clearTimeout(this.debounceTimer);
+                this.debounceTimer = setTimeout(() => this.refreshView(), 300);
+            }
+
+            handleNavClick(action) {
+                switch(action) {
+                    case 'news': this.view.openModal('newsModal'); this.simulateNewsSearch(); break;
+                    case 'compat': this.view.openModal('compatModal'); break;
+                    case 'export': this.view.openModal('exportModal'); break;
+                    case 'shop': 
+                        this.refreshShoppingLists();
+                        this.view.openModal('shoppingModal'); 
+                        break;
+                    case 'predict': 
+                        this.calculatePredictions();
+                        this.view.openModal('medianModal'); 
+                        break;
+                }
+            }
+
+            // --- TRANSACTION LOGIC ---
+
+            populateManualSelect() {
+                const sel = document.getElementById('manualItemSelect');
+                sel.innerHTML = '';
+                // Sort for display
+                const sorted = [...this.model.data].sort((a, b) => a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
+                
+                sorted.forEach(item => {
+                    // Find original index
+                    const idx = this.model.data.indexOf(item);
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    opt.textContent = `${item.brand} - ${item.model} (${item.material})`;
+                    sel.appendChild(opt);
+                });
+            }
+
+            toggleNewItemMode() {
+                const isNew = document.getElementById('newItemToggle').checked;
+                document.getElementById('existingItemArea').classList.toggle('hidden', isNew);
+                document.getElementById('newItemArea').classList.toggle('hidden', !isNew);
+                document.getElementById('newItemArea').classList.toggle('grid', isNew);
+            }
+
+            handleTransaction(direction) {
+                const isNew = document.getElementById('newItemToggle').checked;
+                const qtyInput = document.getElementById('manualQty').value;
+                const qty = parseInt(qtyInput);
+
+                if (isNaN(qty) || qty < 0) { alert("QUANTIDADE INVÁLIDA"); return; }
+                
+                if (isNew) {
+                    // Create New Item Logic
+                    const type = document.getElementById('newType').value.trim().toUpperCase();
+                    const brand = document.getElementById('newBrand').value.trim().toUpperCase();
+                    const model = document.getElementById('newModel').value.trim().toUpperCase();
+                    const material = document.getElementById('newMaterial').value;
+                    let cost = parseFloat(document.getElementById('newCost').value);
+                    if (isNaN(cost)) cost = 2.00;
+
+                    if (!type || !brand || !model) { alert("PREENCHA OS CAMPOS OBRIGATÓRIOS"); return; }
+
+                    const newItem = {
+                        type, brand, model, material,
+                        qty: direction > 0 ? qty : 0, // Initial qty
+                        cost,
+                        sale: material === 'CERÂMICA' ? 35.00 : 30.00,
+                        year: 2026 // Default for manual new
+                    };
+
+                    try {
+                        this.model.addItem(newItem);
+                        alert("PRODUTO CADASTRADO COM SUCESSO!");
+                        this.toggleNewItemMode();
+                        document.getElementById('newItemToggle').checked = false;
+                    } catch (e) {
+                        alert(e.message);
+                    }
+
+                } else {
+                    // Existing Item Logic
+                    const idx = document.getElementById('manualItemSelect').value;
+                    if (idx === "") return;
+                    
+                    const item = this.model.data[idx];
+                    
+                    if (direction > 0) {
+                        this.model.updateItem(idx, { qty: item.qty + qty });
+                        alert("COMPRA REGISTRADA!");
+                    } else {
+                        // Sell
+                        this.model.updateItem(idx, { 
+                            qty: item.qty - qty,
+                            sales: item.sales + qty
+                        });
+                        alert("VENDA REGISTRADA!");
+                    }
+                }
+                
+                this.refreshView();
+                this.refreshShoppingLists();
+            }
+
+            processBatchUpload() {
+                const fileInput = document.getElementById('batchFileUpload');
+                const file = fileInput.files[0];
+                if (!file) return alert("SELECIONE UM ARQUIVO");
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const lines = e.target.result.split(/\r\n|\n/);
+                    let added = 0, updated = 0, errors = 0;
+
+                    lines.forEach(line => {
+                        if (!line.trim()) return;
+                        const parts = line.split(',');
+                        if (parts.length < 5) { errors++; return; }
+
+                        const [type, model, brand, material, qtyStr] = parts.map(s => s.trim().toUpperCase());
+                        const qty = parseInt(qtyStr);
+                        if (isNaN(qty)) { errors++; return; }
+
+                        // Check existence in model
+                        const existingIdx = this.model.data.findIndex(i => 
+                            i.model === model && i.brand === brand && i.type === type && i.material === material
+                        );
+
+                        if (existingIdx !== -1) {
+                            const current = this.model.data[existingIdx];
+                            this.model.updateItem(existingIdx, { qty: current.qty + qty });
+                            updated++;
+                        } else {
+                            const isCeramic = material.includes("CERÂMICA");
+                            this.model.addItem({
+                                type, model, brand, material, qty,
+                                year: 2026, cost: 2.00, sale: isCeramic ? 35.00 : 30.00
+                            });
+                            added++;
+                        }
+                    });
+
+                    alert(`PROCESSAMENTO CONCLUÍDO:\nNOVOS: ${added}\nATUALIZADOS: ${updated}\nERROS: ${errors}`);
+                    this.refreshView();
+                    this.refreshShoppingLists();
+                    fileInput.value = '';
+                };
+                reader.readAsText(file);
+            }
+
+            // --- SHOPPING LIST LOGIC ---
+
+            refreshShoppingLists() {
+                const cartList = document.getElementById('shoppingListCart');
+                const manualList = document.getElementById('shoppingListManual');
+                cartList.innerHTML = '';
+                manualList.innerHTML = '';
+                
+                // Only create list items (View logic mixed here for brevity in single file)
+                // Filter items
+                const lowStock = this.model.data.map((item, idx) => ({item, idx})).filter(o => o.item.qty <= 1);
+                
+                let cartEmpty = true;
+
+                lowStock.forEach(({item, idx}) => {
+                    const isPriority = item.year >= 2021;
+                    const row = `
+                        <tr class="border-b border-gray-50">
+                            <td class="px-4 py-2 font-bold text-gray-700">${item.model}</td>
+                            <td class="px-2 py-2 text-center text-red-600 font-bold">${item.qty}</td>
+                            <td class="px-2 py-2 text-center text-gray-400">${item.year}</td>
+                            <td class="px-2 py-2 text-center text-xs font-bold text-indigo-600">REPOR</td>
+                        </tr>
+                    `;
+
+                    if (isPriority) {
+                        cartList.innerHTML += row;
+                        cartEmpty = false;
+                    } else {
+                        manualList.innerHTML += row;
+                    }
+                });
+
+                document.getElementById('emptyCartMsg').style.display = cartEmpty ? 'block' : 'none';
+                document.getElementById('unifiedActionArea').style.display = cartEmpty ? 'none' : 'block';
+                document.getElementById('emptyManualMsg').style.display = manualList.innerHTML === '' ? 'block' : 'none';
+                
+                // Update Link
+                if (!cartEmpty) {
+                     const link = document.getElementById('unifiedCalendarLink');
+                     const text = "REPOSIÇÃO ESTOQUE PELÍCULAS - PRIORIDADE";
+                     link.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}`;
+                }
+            }
+
+            // --- PREDICTION LOGIC ---
+
+            calculatePredictions() {
+                const tbody = document.getElementById('medianListBody');
+                tbody.innerHTML = '';
+                let totalCost = 0, totalSale = 0;
+                
+                this.model.data.forEach(item => {
+                    totalCost += item.cost;
+                    totalSale += item.sale;
+                    
+                    const suggested = Math.max(item.cost * 2, item.sale); // Floor at current price or double cost
+                    
+                    // Evolution
+                    const lastHistory = item.priceHistory.length > 1 ? item.priceHistory[item.priceHistory.length - 2] : item.priceHistory[0];
+                    const prevPrice = lastHistory ? lastHistory.price : item.sale;
+                    const diff = item.sale - prevPrice;
+                    let evol = "0%";
+                    if (diff > 0) evol = `▲`;
+                    if (diff < 0) evol = `▼`;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="px-4 py-2 font-bold text-gray-700">${item.model}</td>
+                            <td class="px-2 py-2 text-right text-gray-500">R$ ${item.cost.toFixed(2)}</td>
+                            <td class="px-2 py-2 text-center text-gray-500">R$ ${item.sale.toFixed(2)}</td>
+                            <td class="px-2 py-2 text-center font-bold text-gray-400">${evol}</td>
+                            <td class="px-2 py-2 text-right font-bold text-indigo-600">R$ ${suggested.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                const count = this.model.data.length || 1;
+                document.getElementById('meanCostDisplay').innerText = `R$ ${(totalCost/count).toFixed(2)}`;
+                document.getElementById('meanSaleDisplay').innerText = `R$ ${(totalSale/count).toFixed(2)}`;
+            }
+
+            handleBulkUpdate() {
+                const cat = document.getElementById('bulkCategory').value;
+                const price = parseFloat(document.getElementById('bulkPrice').value);
+                if (!price) return;
+
+                let count = 0;
+                this.model.data.forEach((item, idx) => {
+                    if (item.material === cat) {
+                        this.model.updateItem(idx, { sale: price });
+                        count++;
+                    }
+                });
+                alert(`${count} ITENS ATUALIZADOS.`);
+                this.calculatePredictions();
+                this.refreshView();
+            }
+
+            // --- EXPORT LOGIC ---
+            generateXLS() {
+                const onlyStock = document.getElementById('exportOnlyStock').checked;
+                let dataToExport = this.getFilteredData(); // Use current view filters
+                
+                if (onlyStock) {
+                    dataToExport = dataToExport.filter(i => i.qty > 0);
+                }
+
+                // Sort: Stock > 0 first
+                dataToExport.sort((a, b) => b.qty - a.qty);
+
+                let csv = "\uFEFFTIPO\tMODELO\tMARCA\tMATERIAL\tANO\tCUSTO\tVENDA\tESTOQUE\tSAIDAS\n";
+                dataToExport.forEach(i => {
+                    csv += `${i.type}\t${i.model}\t${i.brand}\t${i.material}\t${i.year}\t${Utils.formatCurrency(i.cost)}\t${Utils.formatCurrency(i.sale)}\t${i.qty}\t${i.sales}\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Estoque_${new Date().toISOString().slice(0,10)}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                this.view.closeModal('exportModal');
+            }
+
+            // --- RESET LOGIC ---
+            async handleReset() {
+                const pwd = document.getElementById('resetPassword').value;
+                const hash = await Utils.sha256(pwd);
+                
+                // "Galantepenachio2023*" SHA-256 Hash
+                const targetHash = "e36e3c5443a53e482312d8a08d277712e525143003058a59489f66858e727582";
+
+                if (hash === targetHash) {
+                    if (confirm("TEM CERTEZA ABSOLUTA? ISSO NÃO PODE SER DESFEITO.")) {
+                        this.model.reset();
+                        location.reload();
+                    }
+                } else {
+                    alert("SENHA INCORRETA");
+                }
+            }
+            
+            // --- MOCK NEWS SEARCH ---
+            simulateNewsSearch() {
+                const resultsDiv = document.getElementById('newsResults');
+                const loading = document.getElementById('newsLoading');
+                
+                loading.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                    resultsDiv.classList.remove('hidden');
+                    
+                    const mockNews = [
+                        { brand: "SAMSUNG", model: "GALAXY S25", year: 2026 },
+                        { brand: "APPLE", model: "IPHONE 16 PRO", year: 2026 },
+                        { brand: "MOTOROLA", model: "MOTO G85", year: 2026 }
+                    ];
+
+                    let html = '';
+                    mockNews.forEach(news => {
+                        // Check if exists
+                        const exists = this.model.data.some(i => i.model === news.model && i.brand === news.brand);
+                        if (!exists) {
+                            html += `
+                                <div class="flex justify-between items-center bg-orange-50 p-2 border border-orange-100 mb-2">
+                                    <div><p class="font-bold text-sm text-gray-800">${news.brand} ${news.model}</p><p class="text-[10px] text-gray-500">LANÇAMENTO ${news.year}</p></div>
+                                    <button class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-none add-news-btn" data-brand="${news.brand}" data-model="${news.model}">ADD</button>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    if (!html) html = '<p class="text-center text-xs text-gray-400">NENHUMA NOVIDADE ENCONTRADA</p>';
+                    resultsDiv.innerHTML = html;
+
+                    // Add listeners to dynamic buttons
+                    document.querySelectorAll('.add-news-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            this.view.closeModal('newsModal');
+                            // Open Shopping modal and set new item
+                            this.view.openModal('shoppingModal');
+                            document.getElementById('newItemToggle').click();
+                            document.getElementById('newBrand').value = btn.dataset.brand;
+                            document.getElementById('newModel').value = btn.dataset.model;
+                            document.getElementById('newType').value = '3D COMUM';
+                        };
+                    });
+
+                }, 1500);
+            }
+
+            checkCompatibility() {
+                // Simplified static check
+                const val = document.getElementById('compatInput').value.toUpperCase();
+                const res = document.getElementById('compatResult');
+                res.classList.remove('hidden');
+                
+                if (val.includes("POCO X5")) {
+                    res.innerHTML = `<div class="bg-emerald-50 border border-emerald-200 p-4 mt-4"><p class="text-xs font-bold text-emerald-600">USE: REDMI NOTE 12 4G</p></div>`;
+                } else {
+                    res.innerHTML = `<div class="bg-orange-50 border border-orange-200 p-4 mt-4 text-xs font-bold text-orange-800 text-center">NENHUMA COMPATIBILIDADE DIRETA</div>`;
+                }
+            }
+
+            promptEdit(index, type) {
+                const item = this.model.data[index];
+                if (type === 'cost') {
+                    const val = prompt('NOVO CUSTO:', item.cost);
+                    if (val && !isNaN(val)) this.model.updateItem(index, { cost: parseFloat(val) });
+                } else if (type === 'sale') {
+                    const val = prompt('NOVA VENDA:', item.sale);
+                    if (val && !isNaN(val)) this.model.updateItem(index, { sale: parseFloat(val) });
+                } else if (type === 'sales') {
+                    const val = prompt('VENDAS TOTAIS:', item.sales);
+                    if (val && !isNaN(val)) this.model.updateItem(index, { sales: parseInt(val) });
+                }
+                this.refreshView();
+            }
+        }
+
+        // --- BOOTSTRAP ---
+        const appModel = new InventoryModel();
+        const appView = new View();
+        const appController = new InventoryController(appModel, appView);
+
     </script>
 </body>
 </html>
