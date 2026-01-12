@@ -302,8 +302,25 @@
         /**
          * SISTEMA DE GESTÃO DE ESTOQUE - CORE ENGINE
          * Arquitetura: MVC (Model-View-Controller) simplificado.
-         * Versão 2026: Lógica de Prioridade, Notícias Futuras e Compatibilidade.
          */
+
+        // --- DATABASE: PLANILHA MESTRA ---
+        const COMPATIBILITY_DB = [
+            { base: "Samsung A12", compatible: ["A02", "A02s", "M12", "M02", "A32 5G", "A13 5G"], notes: "Base universal. Atenção: A13 5G serve, A13 4G não." },
+            { base: "Samsung A13 4G", compatible: ["A23 4G", "A23 5G", "M13 4G", "M23 5G", "F23"], notes: "Notch em 'V' suave." },
+            { base: "Samsung A03 Core", compatible: ["A03", "A04e", "M04"], notes: "Linha A0x compartilha painel PLS." },
+            { base: "Samsung A24", compatible: ["Samsung A15", "A25 5G", "M34 5G", "F34"], notes: "Key Island. A24 é o molde 'pai'." },
+            { base: "Samsung A54 5G", compatible: ["S23 FE", "A35 (Adaptável)", "A55 (Adaptável)"], notes: "S23 FE usa vidro do A54. A35/A55 são maiores, mas vidro 'case friendly' serve." },
+            { base: "Samsung A05", compatible: ["A05s", "M05", "F05", "Redmi 13C", "Realme C51"], notes: "Tela universal 6.7 Gota." },
+            { base: "Moto G54", compatible: ["G34", "G14", "G24", "G24 Power"], notes: "Furo Central 6.5\" padronizado." },
+            { base: "Moto G22", compatible: ["E32", "G32", "E13 (Parcial)"], notes: "Cuidado com sensor no E13." },
+            { base: "Moto G10", compatible: ["Moto G30", "Moto G20", "E7 Plus", "E7 Power", "G9 Play"], notes: "Notch gota legado." },
+            { base: "Redmi Note 12 4G", compatible: ["Poco X5 5G"], notes: "Chassi idêntico." },
+            { base: "Redmi 13C", compatible: ["Poco C65", "Realme C51", "Samsung A05"], notes: "Chassi genérico 6.74\"." },
+            { base: "Redmi Note 13 4G", compatible: ["Poco M6 Pro"], notes: "Design plano bordas finas." },
+            { base: "Universal 6.5\"", compatible: ["A12", "G22", "Redmi 9A", "Redmi 10A", "E7 Power"], notes: "Cobre 70% dos Androids (143x78mm)." },
+            { base: "Universal 6.7\"", compatible: ["iPhone Pro Max", "S24 Plus", "A05"], notes: "Dimensões aprox: 154x77mm." }
+        ];
 
         // --- CUSTOM DIALOG SYSTEM ---
         class DialogSystem {
@@ -389,14 +406,11 @@
             hydrate(data) {
                 return data.map(item => {
                     const year = Number(item.year);
-                    // Lógica de Prioridade: Anterior a Dez 2021 (ou seja, < 2022) é não prioritário por padrão.
-                    // Porém, respeita se o usuário tiver setado manualmente 'customPriority'.
                     let isPriority = false;
                     
                     if (item.customPriority !== undefined) {
                         isPriority = item.customPriority;
                     } else {
-                        // Default logic: Anos >= 2022 são prioritários (iPhone 13 é 2021 -> Não Prior. iPhone 14 é 2022 -> Prior.)
                         isPriority = year >= 2022;
                     }
 
@@ -408,7 +422,7 @@
                         sales: Number(item.sales || 0),
                         year: year,
                         isPriority: isPriority, 
-                        customPriority: item.customPriority, // Persist manual override
+                        customPriority: item.customPriority, 
                         priceHistory: Array.isArray(item.priceHistory) ? item.priceHistory : [{ date: new Date(), price: Number(item.sale) }]
                     };
                 });
@@ -420,7 +434,6 @@
                 const exists = this.data.find(i => i.model === item.model && i.brand === item.brand && i.type === item.type);
                 if (exists) throw new Error(`PRODUTO JÁ CADASTRADO: ${item.model}`);
                 
-                // Prioridade automática ao criar
                 const isPriority = item.year >= 2022;
 
                 this.data.push({
@@ -439,7 +452,6 @@
             updateItem(index, updates) {
                 if (this.data[index]) {
                     Object.assign(this.data[index], updates);
-                    // Se atualizar ano, recalcula prioridade se não tiver override
                     if (updates.year && this.data[index].customPriority === undefined) {
                          this.data[index].isPriority = updates.year >= 2022;
                     }
@@ -451,7 +463,7 @@
                 if (this.data[index]) {
                     const newState = !this.data[index].isPriority;
                     this.data[index].isPriority = newState;
-                    this.data[index].customPriority = newState; // Set override
+                    this.data[index].customPriority = newState; 
                     this.save();
                 }
             }
@@ -459,13 +471,9 @@
             checkOldDevicesAndDemote() {
                 let changedCount = 0;
                 this.data.forEach((item, index) => {
-                    // Logic: Before Dec 2021 means < 2022
                     if (item.year < 2022 && item.isPriority) {
-                         // Only auto-demote if it wasn't manually set to priority (optional, but requested behavior implies forcing check)
-                         // Prompt says "CONFIRMAR ... ESTAS SERÃO INCLUIDAS COMO NÃO PRIORITÁRIAS"
-                         // So we demote them.
                          this.data[index].isPriority = false;
-                         this.data[index].customPriority = false; // Set explicit override
+                         this.data[index].customPriority = false; 
                          changedCount++;
                     }
                 });
@@ -725,12 +733,10 @@
                 setTimeout(() => {
                     const changes = this.model.checkOldDevicesAndDemote();
                     if(msg) msg.classList.add('hidden');
-                    // Refresh if changes occurred
                     if(changes > 0) {
                         this.refreshShoppingLists();
                         this.refreshView();
                     } else {
-                        // Just refresh lists to be sure
                         this.refreshShoppingLists();
                     }
                 }, 800);
@@ -855,13 +861,8 @@
                 cartList.innerHTML = '';
                 manualList.innerHTML = '';
                 
-                // Only create list items (View logic mixed here for brevity in single file)
-                // Filter items: Low stock OR Priority items (even if not low stock, show in priority list if needed? Logic below follows low stock)
-                // Assuming "Reposição" implies shopping list (stock <= 1).
-                
                 const lowStock = this.model.data.map((item, idx) => ({ ...item, originalIdx: idx })).filter(item => item.qty <= 1);
                 
-                // Also get all priority items for calendar, regardless of stock
                 const allPriority = this.model.data.filter(item => item.isPriority);
 
                 let cartEmpty = true;
@@ -869,11 +870,9 @@
                     const rowBase = `<td class="py-2"><div class="font-bold text-gray-800 uppercase">${item.model}</div><div class="text-[10px] text-gray-400">${item.brand}</div></td><td class="py-2 text-center text-red-600 font-bold bg-red-50 rounded-lg">${item.qty}</td><td class="py-2 text-center text-xs text-brand-500 font-bold uppercase tracking-wide">Repor</td>`;
                     
                     if (item.isPriority) { 
-                        // Priority Item Row (Arrow Down)
                         cartList.innerHTML += `<tr>${rowBase}<td class="py-2 text-center"><button class="btn-move btn-move-down" data-action="move-down" data-id="${item.originalIdx}">⬇️</button></td></tr>`;
                         cartEmpty = false; 
                     } else { 
-                        // Non-Priority Item Row (Arrow Up)
                         manualList.innerHTML += `<tr>${rowBase}<td class="py-2 text-center"><button class="btn-move btn-move-up" data-action="move-up" data-id="${item.originalIdx}">⬆️</button></td></tr>`;
                     }
                 });
@@ -882,7 +881,6 @@
                 document.getElementById('unifiedActionArea').style.display = 'block'; 
                 document.getElementById('emptyManualMsg').style.display = manualList.innerHTML === '' ? 'block' : 'none';
                 
-                // Calendar Link - Includes ALL Priority Items
                 const link = document.getElementById('unifiedCalendarLink');
                 const title = "REPOSIÇÃO ESTOQUE - LISTA PRIORITÁRIA";
                 let description = "ITENS PRIORITÁRIOS PARA VERIFICAÇÃO:\n\n";
@@ -997,22 +995,69 @@
                 const val = document.getElementById('compatInput').value.toUpperCase();
                 const res = document.getElementById('compatResult');
                 res.classList.remove('hidden');
+                res.innerHTML = ''; // Limpar anterior
+
+                // 1. BUSCA NA BASE INTERNA (PLANILHA MESTRA)
+                let internalMatches = [];
                 
-                // DATASET EXPANDIDO DE COMPATIBILIDADE
-                let match = "";
-                
-                if (val.includes("POCO X5") || val.includes("REDMI NOTE 12")) match = "REDMI NOTE 12 4G / POCO X5 5G";
-                else if (val.includes("IPHONE 13") || val.includes("IPHONE 14")) match = "IPHONE 13 / 13 PRO / 14";
-                else if (val.includes("IPHONE 12") || val.includes("12 PRO")) match = "IPHONE 12 / 12 PRO";
-                else if (val.includes("A54") || val.includes("M54")) match = "SAMSUNG A54 / M54 5G";
-                else if (val.includes("S23") || val.includes("S24")) match = "S23 / S24 (BASE)";
-                else if (val.includes("A14")) match = "A14 4G / A14 5G";
-                
-                if (match) {
-                    res.innerHTML = `<div class="bg-emerald-50 border border-emerald-100 rounded-xl p-6 text-center shadow-sm"><p class="text-xs text-emerald-500 font-medium mb-1 uppercase">Compatibilidade Encontrada</p><p class="text-lg font-bold text-emerald-700 uppercase">${match}</p></div>`;
-                } else {
-                    res.innerHTML = `<div class="bg-gray-50 border border-gray-100 rounded-xl p-6 text-center"><p class="text-sm font-bold text-gray-500 uppercase">Sem dados diretos para "${val}". Tente o modelo base.</p></div>`;
+                // Procurar se 'val' é uma BASE
+                const baseMatch = COMPATIBILITY_DB.find(c => c.base.toUpperCase().includes(val));
+                if (baseMatch) {
+                    internalMatches.push({
+                        title: `BASE: ${baseMatch.base}`,
+                        desc: `Compatível com: ${baseMatch.compatible.join(', ')}`,
+                        notes: baseMatch.notes
+                    });
                 }
+
+                // Procurar se 'val' é um COMPATÍVEL
+                const compMatch = COMPATIBILITY_DB.filter(c => c.compatible.some(model => model.toUpperCase().includes(val)));
+                if (compMatch.length > 0) {
+                    compMatch.forEach(m => {
+                        internalMatches.push({
+                            title: `USE: ${m.base}`,
+                            desc: `(Compatibilidade Inversa Encontrada)`,
+                            notes: m.notes
+                        });
+                    });
+                }
+
+                // 2. BUSCA NA WEB (SIMULADA - DATASET DE APOIO)
+                let webMatch = null;
+                // Lógica de fallback antiga para casos não cobertos
+                if (val.includes("IPHONE 13") || val.includes("IPHONE 14")) webMatch = "IPHONE 13 / 13 PRO / 14";
+                else if (val.includes("IPHONE 12") || val.includes("12 PRO")) webMatch = "IPHONE 12 / 12 PRO";
+                else if (val.includes("A54") || val.includes("M54")) webMatch = "SAMSUNG A54 / M54 5G"; // Reforço Web
+                else if (val.includes("S23") || val.includes("S24")) webMatch = "S23 / S24 (BASE)";
+                else if (val.includes("A14")) webMatch = "A14 4G / A14 5G";
+
+                // RENDERIZAR RESULTADOS
+                let html = '';
+
+                if (internalMatches.length > 0) {
+                    html += `<div class="mb-4"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Resultados da Planilha Mestra</p>`;
+                    internalMatches.forEach(m => {
+                        html += `<div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-2 shadow-sm">
+                                    <p class="text-sm font-bold text-emerald-800 uppercase">${m.title}</p>
+                                    <p class="text-xs text-emerald-600 mt-1">${m.desc}</p>
+                                    <p class="text-[10px] text-gray-500 mt-2 italic border-t border-emerald-100 pt-2">${m.notes}</p>
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                if (webMatch && internalMatches.length === 0) { // Mostrar Web apenas se não achou na planilha ou como complemento
+                     html += `<div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center shadow-sm">
+                                <p class="text-xs text-indigo-500 font-medium mb-1 uppercase">Sugestão Web</p>
+                                <p class="text-lg font-bold text-indigo-700 uppercase">${webMatch}</p>
+                              </div>`;
+                }
+
+                if (html === '') {
+                    html = `<div class="bg-gray-50 border border-gray-100 rounded-xl p-6 text-center"><p class="text-sm font-bold text-gray-500 uppercase">Sem dados diretos para "${val}". Tente o modelo base ou variantes.</p></div>`;
+                }
+
+                res.innerHTML = html;
             }
 
             promptEdit(index, type) {
